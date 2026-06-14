@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         String     @default("BUSINESS_OWNER") // "SUPER_ADMIN" or "BUSINESS_OWNER"
+  businesses   Business[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Business {
+  id             String       @id @default(uuid())
+  ownerId        String
+  owner          User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  slug           String       @unique // For public URL: /menu/[slug]
+  logoUrl        String?
+  description    String?
+  phone          String?
+  address        String?
+  whatsappNumber String?
+  showCalories   Boolean      @default(false)
+  allowOrders    Boolean      @default(false)
+  coverVideoUrl  String?
+  coverImageUrl  String?
+  themeId        String       @default("modern-cafe") // Theme preset key
+  status         String       @default("ACTIVE") // "DRAFT", "ACTIVE", or "SUSPENDED"
+  openingHours   String?      // e.g. "09:00 - 23:00"
+  serviceType    String       @default("MASA_SERVISI") // "MASA_SERVISI", "SELF_SERVIS", "HER_IKISI"
+  instagramUrl   String?
+  locationUrl    String?
+  reviewsUrl     String?
+  categories     Category[]
+  subscription   Subscription?
+  visitorLogs    VisitorLog[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([ownerId])
+  @@index([slug])
+}
+
+model Category {
+  id               String    @id @default(uuid())
+  businessId       String
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name             String
+  sortOrder        Int       @default(0)
+  categoryImageUrl String?   // Optional cover image for the category card
+  products         Product[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([businessId])
+}
+
+model Product {
+  id             String   @id @default(uuid())
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  price          Float
+  imageUrl       String?
+  isCommonImage  Boolean  @default(false)
+  commonImageKey String?
+  calories       Int?
+  protein        Float?
+  carbs          Float?
+  fat            Float?
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([categoryId])
+}
+
+model SubscriptionPlan {
+  id               String         @id // e.g. "starter", "pro", "premium"
+  name             String
+  priceMonthly     Float
+  maxCategories    Int
+  maxProducts      Int
+  hasAI            Boolean        @default(false)
+  hasWhatsAppOrder Boolean        @default(false)
+  hasNutrients     Boolean        @default(false)
+  stripePriceId    String?
+  subscriptions    Subscription[]
+}
+
+model Subscription {
+  id                   String           @id @default(uuid())
+  businessId           String           @unique
+  business             Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 SubscriptionPlan @relation(fields: [planId], references: [id])
+  status               String           @default("ACTIVE") // "ACTIVE", "CANCELED", "PAST_DUE"
+  stripeSubscriptionId String?
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([businessId])
+}
+
+model CommonGalleryImage {
+  id          String   @id @default(uuid())
+  categoryKey String   // e.g. "Kahve", "Burger", etc.
+  title       String
+  imageUrl    String
+  createdAt   DateTime @default(now())
+}
+
+model VisitorLog {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  date       DateTime // Midnight date
+  count      Int      @default(0)
+
+  @@unique([businessId, date])
+  @@index([businessId])
+}

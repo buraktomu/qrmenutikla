@@ -1,0 +1,265 @@
+// ─── Category View Enum ───────────────────────────────────────────────────────
+export type CategoryView =
+  | 'CLASSIC_LIST'    // Classic category pill bar + product list (default)
+  | 'IMAGE_GRID'      // Grid of category cards with images (Fast Food)
+  | 'SHOWCASE'        // Full-width hero category cards (Premium Restaurant)
+  | 'MAGAZINE'        // 2-col asymmetric magazine layout (Coffee House)
+  | 'MASONRY'         // Masonry grid (Street Food, Neon)
+  | 'LUXURY_CATALOG'; // Large premium full-width catalog cards (Fine Dining, Luxury Gold)
+
+export type ThemeConfig = {
+  id: string;
+  name: string;
+  fontHeader: string; // Tailwind font classes
+  fontBody: string;
+  bgMain: string; // Background classes
+  bgCard: string; // Card background classes
+  textTitle: string; // Title text color
+  textDesc: string; // Description text color
+  textPrice: string; // Price color
+  accentColor: string; // Button & highlights color (e.g. bg-amber-500)
+  accentText: string; // Accent text color (e.g. text-amber-500)
+  borderRadius: string; // Card border radius
+  borderColor: string; // Card border color
+  gridCols: string; // Layout grid column configuration (for larger screens)
+  categoryView: CategoryView; // How the category entry screen is rendered
+  hasGlow?: boolean; // Neon glow flag
+  customCss?: string; // Additional classes
+  isPremiumAddon?: boolean; // Premium status
+  priceLabel?: string;       // Price details
+};
+
+export const THEMES: ThemeConfig[] = [
+  {
+    id: 'modern-cafe',
+    name: 'Modern Cafe',
+    fontHeader: 'font-serif',
+    fontBody: 'font-sans',
+    bgMain: 'bg-stone-50 text-stone-900',
+    bgCard: 'bg-white border-stone-200/60 shadow-sm hover:shadow-md transition-shadow',
+    textTitle: 'text-stone-800 font-bold',
+    textDesc: 'text-stone-500 text-xs line-clamp-2',
+    textPrice: 'text-amber-800 font-semibold',
+    accentColor: 'bg-amber-800 hover:bg-amber-900 text-white',
+    accentText: 'text-amber-800',
+    borderRadius: 'rounded-2xl',
+    borderColor: 'border border-stone-200/60',
+    gridCols: 'grid-cols-1 md:grid-cols-2',
+    categoryView: 'IMAGE_GRID',
+  },
+  {
+    id: 'premium-restaurant',
+    name: 'Premium Restaurant',
+    fontHeader: 'font-serif tracking-wide',
+    fontBody: 'font-serif',
+    bgMain: 'bg-zinc-900 text-zinc-100',
+    bgCard: 'bg-zinc-950/60 border-zinc-800/80 hover:border-amber-500/30 transition-all duration-300',
+    textTitle: 'text-zinc-100 font-medium',
+    textDesc: 'text-zinc-400 text-xs line-clamp-2',
+    textPrice: 'text-amber-400 font-bold',
+    accentColor: 'bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold',
+    accentText: 'text-amber-400',
+    borderRadius: 'rounded-lg',
+    borderColor: 'border border-zinc-800/80',
+    gridCols: 'grid-cols-1',
+    categoryView: 'SHOWCASE',
+  },
+  {
+    id: 'fast-food',
+    name: 'Fast Food',
+    fontHeader: 'font-sans font-black uppercase tracking-tight',
+    fontBody: 'font-sans',
+    bgMain: 'bg-amber-50 text-zinc-900',
+    bgCard: 'bg-white border-2 border-red-500/10 shadow-md hover:shadow-xl transition-all hover:-translate-y-0.5',
+    textTitle: 'text-red-600',
+    textDesc: 'text-zinc-600 text-xs line-clamp-2',
+    textPrice: 'text-red-600 font-black text-lg',
+    accentColor: 'bg-red-500 hover:bg-red-600 text-white font-black',
+    accentText: 'text-red-500',
+    borderRadius: 'rounded-3xl',
+    borderColor: 'border-2 border-red-500/10',
+    gridCols: 'grid-cols-2 max-sm:grid-cols-1 gap-4',
+    categoryView: 'IMAGE_GRID',
+  },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    fontHeader: 'font-sans font-light tracking-widest uppercase',
+    fontBody: 'font-sans font-light',
+    bgMain: 'bg-white text-zinc-950',
+    bgCard: 'bg-white border-b border-zinc-100 py-4', // No side borders, list item style
+    textTitle: 'text-zinc-950 font-semibold',
+    textDesc: 'text-zinc-400 text-xs line-clamp-2',
+    textPrice: 'text-zinc-900 font-normal',
+    accentColor: 'bg-zinc-950 hover:bg-zinc-800 text-white',
+    accentText: 'text-zinc-950',
+    borderRadius: 'rounded-none',
+    borderColor: 'border-b border-zinc-100',
+    gridCols: 'grid-cols-1',
+    categoryView: 'CLASSIC_LIST',
+  },
+  {
+    id: 'dark-mode',
+    name: 'Dark Mode',
+    fontHeader: 'font-sans font-bold',
+    fontBody: 'font-sans',
+    bgMain: 'bg-zinc-950 text-zinc-50',
+    bgCard: 'bg-zinc-900/60 border-zinc-800 shadow-lg hover:shadow-cyan-500/5 hover:border-zinc-700/80 transition-all duration-300',
+    textTitle: 'text-zinc-50 font-semibold',
+    textDesc: 'text-zinc-400 text-xs line-clamp-2',
+    textPrice: 'text-cyan-400 font-bold',
+    accentColor: 'bg-cyan-500 hover:bg-cyan-600 text-zinc-950 font-semibold',
+    accentText: 'text-cyan-400',
+    borderRadius: 'rounded-xl',
+    borderColor: 'border border-zinc-800',
+    gridCols: 'grid-cols-1 md:grid-cols-2',
+    categoryView: 'IMAGE_GRID',
+  },
+  {
+    id: 'luxury-gold',
+    name: 'Luxury Gold',
+    fontHeader: 'font-serif tracking-widest uppercase',
+    fontBody: 'font-sans',
+    bgMain: 'bg-black text-amber-100/90',
+    bgCard: 'bg-zinc-950 border-amber-500/20 shadow-2xl hover:border-amber-500/40 hover:shadow-amber-500/5 transition-all duration-500',
+    textTitle: 'text-amber-100 font-semibold tracking-wide',
+    textDesc: 'text-zinc-400 text-xs line-clamp-2',
+    textPrice: 'text-amber-400 font-extrabold tracking-wider',
+    accentColor: 'bg-amber-500 hover:bg-amber-600 text-black font-semibold',
+    accentText: 'text-amber-400',
+    borderRadius: 'rounded-lg',
+    borderColor: 'border border-amber-500/25',
+    gridCols: 'grid-cols-1',
+    categoryView: 'LUXURY_CATALOG',
+  },
+  {
+    id: 'coffee-house',
+    name: 'Coffee House',
+    fontHeader: 'font-serif',
+    fontBody: 'font-sans',
+    bgMain: 'bg-orange-950/20 text-orange-950',
+    bgCard: 'bg-white/80 border-orange-900/10 shadow-sm hover:bg-white transition-colors duration-300',
+    textTitle: 'text-orange-950 font-bold',
+    textDesc: 'text-orange-900/60 text-xs line-clamp-2',
+    textPrice: 'text-orange-800 font-extrabold',
+    accentColor: 'bg-orange-850 hover:bg-orange-900 text-white',
+    accentText: 'text-orange-850',
+    borderRadius: 'rounded-2xl',
+    borderColor: 'border border-orange-900/10',
+    gridCols: 'grid-cols-1 md:grid-cols-2',
+    categoryView: 'MAGAZINE',
+  },
+  {
+    id: 'street-food',
+    name: 'Street Food',
+    fontHeader: 'font-sans font-black uppercase tracking-tight italic',
+    fontBody: 'font-sans font-medium',
+    bgMain: 'bg-zinc-950 text-zinc-100',
+    bgCard: 'bg-zinc-900 border-2 border-zinc-800 hover:border-yellow-500 transition-colors',
+    textTitle: 'text-zinc-100',
+    textDesc: 'text-zinc-400 text-xs line-clamp-2',
+    textPrice: 'text-yellow-400 font-extrabold text-lg',
+    accentColor: 'bg-yellow-400 hover:bg-yellow-500 text-zinc-950 font-bold uppercase',
+    accentText: 'text-yellow-400',
+    borderRadius: 'rounded-none',
+    borderColor: 'border-2 border-zinc-800',
+    gridCols: 'grid-cols-2 max-sm:grid-cols-1 gap-3',
+    categoryView: 'MASONRY',
+  },
+  {
+    id: 'fine-dining',
+    name: 'Fine Dining',
+    fontHeader: 'font-serif tracking-widest',
+    fontBody: 'font-serif',
+    bgMain: 'bg-slate-950 text-slate-100',
+    bgCard: 'bg-slate-900/40 border-slate-800/80 hover:border-zinc-500/20 py-6 px-4',
+    textTitle: 'text-slate-100 font-light text-lg',
+    textDesc: 'text-slate-400 text-xs line-clamp-2 font-light italic',
+    textPrice: 'text-amber-200/90 font-light',
+    accentColor: 'bg-amber-200 hover:bg-amber-300 text-slate-950 font-medium tracking-wide',
+    accentText: 'text-amber-200',
+    borderRadius: 'rounded-none',
+    borderColor: 'border border-slate-800/80',
+    gridCols: 'grid-cols-1',
+    categoryView: 'LUXURY_CATALOG',
+  },
+  {
+    id: 'neon-style',
+    name: 'Neon Style',
+    fontHeader: 'font-mono uppercase font-semibold tracking-wide',
+    fontBody: 'font-mono',
+    bgMain: 'bg-slate-950 text-purple-100',
+    bgCard: 'bg-zinc-950/80 border border-fuchsia-500/30 hover:border-fuchsia-500 hover:shadow-[0_0_15px_rgba(217,70,239,0.2)] transition-all duration-300',
+    textTitle: 'text-white font-bold',
+    textDesc: 'text-purple-300/60 text-xs line-clamp-2',
+    textPrice: 'text-fuchsia-400 font-bold',
+    accentColor: 'bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-bold',
+    accentText: 'text-fuchsia-400',
+    borderRadius: 'rounded-xl',
+    borderColor: 'border border-fuchsia-500/30',
+    gridCols: 'grid-cols-1 md:grid-cols-2',
+    categoryView: 'MASONRY',
+    hasGlow: true,
+  },
+  {
+    id: 'premium-3d-gourmet',
+    name: '3D Gourmet (Premium)',
+    fontHeader: 'font-serif tracking-widest uppercase text-amber-300',
+    fontBody: 'font-sans',
+    bgMain: 'bg-stone-950 text-stone-100',
+    bgCard: 'bg-stone-900/80 border-stone-800 shadow-2xl relative overflow-hidden',
+    textTitle: 'text-stone-100 font-bold',
+    textDesc: 'text-stone-400 text-xs',
+    textPrice: 'text-amber-300 font-extrabold',
+    accentColor: 'bg-amber-400 hover:bg-amber-500 text-stone-950 font-bold',
+    accentText: 'text-amber-300',
+    borderRadius: 'rounded-2xl',
+    borderColor: 'border border-stone-800',
+    gridCols: 'grid-cols-1 md:grid-cols-2',
+    categoryView: 'SHOWCASE',
+    isPremiumAddon: true,
+    priceLabel: '1.499 TL'
+  },
+  {
+    id: 'premium-cyber-bistro',
+    name: 'Cyberpunk Bistro (Premium)',
+    fontHeader: 'font-mono uppercase font-black tracking-tighter text-red-500',
+    fontBody: 'font-mono',
+    bgMain: 'bg-zinc-950 text-zinc-100',
+    bgCard: 'bg-black border-2 border-red-500/40 shadow-[0_0_10px_rgba(239,68,68,0.1)]',
+    textTitle: 'text-zinc-100 font-bold',
+    textDesc: 'text-zinc-500 text-xs',
+    textPrice: 'text-red-500 font-extrabold',
+    accentColor: 'bg-red-500 hover:bg-red-600 text-black font-extrabold',
+    accentText: 'text-red-500',
+    borderRadius: 'rounded-none',
+    borderColor: 'border-2 border-red-500/40',
+    gridCols: 'grid-cols-2 max-sm:grid-cols-1 gap-4',
+    categoryView: 'IMAGE_GRID',
+    isPremiumAddon: true,
+    priceLabel: '1.299 TL'
+  },
+  {
+    id: 'premium-retro-news',
+    name: 'Retro Newspaper (Premium)',
+    fontHeader: 'font-serif uppercase tracking-normal border-b-2 border-stone-800 pb-1',
+    fontBody: 'font-serif',
+    bgMain: 'bg-[#faf6ee] text-stone-900',
+    bgCard: 'bg-[#faf6ee] border-2 border-double border-stone-800 shadow-none',
+    textTitle: 'text-stone-900 font-black',
+    textDesc: 'text-stone-600 text-xs',
+    textPrice: 'text-stone-900 font-black border-stone-800 border px-1.5 py-0.5 rounded',
+    accentColor: 'bg-stone-900 hover:bg-stone-850 text-white',
+    accentText: 'text-stone-900',
+    borderRadius: 'rounded-none',
+    borderColor: 'border-2 border-double border-stone-800',
+    gridCols: 'grid-cols-1 md:grid-cols-2 gap-6',
+    categoryView: 'MAGAZINE',
+    isPremiumAddon: true,
+    priceLabel: '999 TL'
+  },
+];
+
+export function getThemeById(id: string): ThemeConfig {
+  return THEMES.find((theme) => theme.id === id) || THEMES[0];
+}
