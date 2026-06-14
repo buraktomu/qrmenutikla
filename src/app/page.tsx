@@ -418,7 +418,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/register"
-              className="px-5 py-2 rounded-xl bg-white text-sm font-bold text-stone-900 border border-purple-500/20 shadow-[0_4px_16px_rgba(168,85,247,0.12)] hover:shadow-[0_6px_22px_rgba(168,85,247,0.22)] hover:scale-[1.01] active:scale-[0.99] transition-all"
+              className="px-5 py-2 rounded-xl bg-purple-50 text-sm font-bold text-purple-700 border border-purple-200 hover:bg-purple-650 hover:text-white hover:border-purple-650 shadow-[0_4px_12px_rgba(168,85,247,0.08)] hover:shadow-[0_6px_18px_rgba(168,85,247,0.18)] hover:scale-[1.01] active:scale-[0.99] transition-all"
             >
               Kaydol
             </Link>
@@ -448,7 +448,7 @@ export default function LandingPage() {
             ))}
             <div className="h-px bg-stone-200 my-1" />
             <Link href="/login" className="hover:text-stone-900 py-1 block">Giriş Yap</Link>
-            <Link href="/register" className="w-full py-3 rounded-xl bg-white text-center text-sm font-bold text-stone-900 border border-purple-500/20 shadow-[0_4px_16px_rgba(168,85,247,0.12)] block">
+            <Link href="/register" className="w-full py-3 rounded-xl bg-purple-50 text-center text-sm font-bold text-purple-700 border border-purple-200 hover:bg-purple-650 hover:text-white hover:border-purple-650 shadow-[0_4px_12px_rgba(168,85,247,0.08)] block">
               Kaydol
             </Link>
           </div>
@@ -503,10 +503,10 @@ export default function LandingPage() {
             <div data-hero-reveal className="mt-9 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Link
                 href="/register"
-                className="px-7 py-3.5 rounded-xl bg-white text-sm font-bold text-stone-900 border border-purple-500/25 shadow-[0_6px_22px_rgba(168,85,247,0.15)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.25)] hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 group"
+                className="px-7 py-3.5 rounded-xl bg-purple-50 text-sm font-bold text-purple-700 border border-purple-200 shadow-[0_4px_12px_rgba(168,85,247,0.08)] hover:shadow-[0_6px_18px_rgba(168,85,247,0.18)] hover:bg-purple-650 hover:text-white hover:border-purple-650 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 group"
               >
                 Kaydol
-                <ArrowRight className="w-4 h-4 text-purple-650 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-purple-600 group-hover:text-white group-hover:translate-x-1 transition-transform" />
               </Link>
               <a
                 href="#temalar"
@@ -940,10 +940,10 @@ export default function LandingPage() {
           <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/register"
-              className="px-8 py-4 rounded-xl bg-white text-sm font-bold text-stone-900 border border-purple-500/25 shadow-[0_6px_22px_rgba(168,85,247,0.15)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.25)] hover:scale-[1.01] active:scale-[0.99] transition-all inline-flex items-center justify-center gap-2 group"
+              className="px-8 py-4 rounded-xl bg-white text-sm font-bold text-stone-900 border border-purple-500/25 shadow-[0_6px_22px_rgba(168,85,247,0.15)] hover:shadow-[0_8px_30px_rgba(168,85,247,0.25)] hover:scale-[1.01] active:scale-[0.99] transition-all inline-flex items-center justify-center gap-2 group hover:bg-purple-650 hover:text-white hover:border-purple-650"
             >
               Kaydol
-              <ArrowRight className="w-4 h-4 text-purple-650 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-purple-650 group-hover:text-white group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               href="/login"
