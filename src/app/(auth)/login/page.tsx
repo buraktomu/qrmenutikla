@@ -41,6 +41,10 @@ function LoginContent() {
       if (res?.error) {
         showToast('Giriş başarısız. Lütfen şifrenizi kontrol edin.', 'error');
       } else {
+        // Set session-only cookie to expire when the browser is closed
+        if (typeof document !== 'undefined') {
+          document.cookie = `session_active=true; path=/; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+        }
         showToast('Başarıyla giriş yapıldı. Yönlendiriliyorsunuz...', 'success');
         router.push('/dashboard');
         router.refresh();

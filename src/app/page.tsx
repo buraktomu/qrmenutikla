@@ -847,13 +847,6 @@ export default function LandingPage() {
                     {plan.description}
                   </p>
 
-                  <div className="mt-6 flex items-baseline gap-1.5">
-                    <span className={`font-serif text-4xl ${popular ? 'text-white' : 'text-stone-900'}`}>
-                      {plan.price} TL
-                    </span>
-                    <span className={`text-sm ${popular ? 'text-stone-400' : 'text-stone-500'}`}>/ {plan.period.toLowerCase()}</span>
-                  </div>
-
                   <ul className="mt-7 flex flex-col gap-3 flex-1">
                     {plan.features.map((f, i) => (
                       <li key={i} className="flex items-start gap-2.5 text-[13px]">

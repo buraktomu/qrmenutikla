@@ -21,6 +21,23 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+
+function deleteCookie(name: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -31,8 +48,10 @@ export default function DashboardLayout({
   const { data: session, status } = useSession();
   const { showToast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isVerifyingSession, setIsVerifyingSession] = useState(true);
 
   const handleSignOut = async () => {
+    deleteCookie('session_active');
     await signOut({ redirect: false });
     showToast('Başarıyla çıkış yapıldı.', 'success');
     router.push('/login');
@@ -58,12 +77,49 @@ export default function DashboardLayout({
         { href: '/dashboard/billing', label: 'Abonelik & Ödeme', icon: CreditCard },
       ];
 
-  // Guard: Redirect SUPER_ADMIN from business dashboard pages to admin pages
+  // Guard: Verify session cookie on mount and redirect to /login if missing
   React.useEffect(() => {
-    if (status === 'authenticated' && userRole === 'SUPER_ADMIN' && pathname.startsWith('/dashboard')) {
-      router.push('/admin');
+    if (status === 'loading') return;
+
+    if (status === 'authenticated') {
+      const active = getCookie('session_active');
+      if (!active) {
+        // Main session exists but session_active cookie is missing -> browser was closed.
+        signOut({ redirect: false }).then(() => {
+          router.push('/login');
+          router.refresh();
+        });
+        return;
+      }
+      setIsVerifyingSession(false);
+
+      if (userRole === 'SUPER_ADMIN' && pathname.startsWith('/dashboard')) {
+        router.push('/admin');
+      }
+    } else if (status === 'unauthenticated') {
+      setIsVerifyingSession(false);
+      router.push('/login');
     }
   }, [userRole, status, pathname, router]);
+
+  if (status === 'loading' || isVerifyingSession) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute w-[350px] h-[350px] bg-indigo-500/5 rounded-full blur-3xl top-1/4 left-1/4 pointer-events-none -z-10" />
+        <div className="absolute w-[350px] h-[350px] bg-purple-500/5 rounded-full blur-3xl bottom-1/4 right-1/4 pointer-events-none -z-10" />
+        
+        <div className="flex flex-col items-center gap-4 animate-pulse">
+          <div className="w-12 h-12 rounded-xl bg-indigo-650/10 border border-indigo-500/25 flex items-center justify-center">
+            <QrCode className="w-6 h-6 text-indigo-600 animate-spin [animation-duration:3s]" />
+          </div>
+          <span className="text-xs text-stone-500 font-bold tracking-widest uppercase mt-2">
+            Güvenli Oturum Kontrol Ediliyor...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-stone-50 text-black min-h-screen flex flex-col md:flex-row">
