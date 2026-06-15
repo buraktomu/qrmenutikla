@@ -1,6 +1,7 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { getPlatformSettings } from '@/lib/settings';
 import QrMenu from './QrMenu';
 import { ShieldAlert, AlertCircle } from 'lucide-react';
 
@@ -96,6 +97,10 @@ export default async function PublicMenuPage(
 
   const plan = subscription.plan;
 
+  // Platform-wide master switch: if ordering is globally disabled, no business can take orders.
+  const settings = await getPlatformSettings();
+  const effectiveAllowOrders = business.allowOrders && settings.orderingEnabled;
+
   return (
     <QrMenu
       business={{
@@ -103,7 +108,7 @@ export default async function PublicMenuPage(
         description: business.description,
         whatsappNumber: business.whatsappNumber,
         showCalories: business.showCalories,
-        allowOrders: business.allowOrders,
+        allowOrders: effectiveAllowOrders,
         logoUrl: business.logoUrl,
         coverVideoUrl: business.coverVideoUrl,
         coverImageUrl: business.coverImageUrl,
@@ -119,6 +124,7 @@ export default async function PublicMenuPage(
       categories={business.categories}
       hasWhatsAppOrder={plan.hasWhatsAppOrder}
       hasNutrients={plan.hasNutrients}
+      viewOnly={!settings.orderingEnabled}
     />
   );
 }

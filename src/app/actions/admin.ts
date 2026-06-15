@@ -17,6 +17,31 @@ async function verifyAdminRole() {
 }
 
 /**
+ * Updates the platform-wide feature flags (AI + ordering/waiter-call).
+ * Affects ALL businesses at once. Super Admin only.
+ */
+export async function updatePlatformSettings(data: { aiEnabled: boolean; orderingEnabled: boolean }) {
+  const isAdmin = await verifyAdminRole();
+  if (!isAdmin) return { success: false, error: 'Yetkisiz erişim.' };
+
+  try {
+    await prisma.platformSetting.upsert({
+      where: { id: 'global' },
+      update: { aiEnabled: data.aiEnabled, orderingEnabled: data.orderingEnabled },
+      create: { id: 'global', aiEnabled: data.aiEnabled, orderingEnabled: data.orderingEnabled },
+    });
+
+    // Refresh anything that depends on these flags
+    revalidatePath('/admin/settings');
+    revalidatePath('/dashboard/menu');
+    return { success: true, error: null };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Ayarlar güncellenemedi.' };
+  }
+}
+
+/**
  * Toggles a business status between ACTIVE and SUSPENDED.
  */
 export async function toggleBusinessStatus(businessId: string, currentStatus: string) {

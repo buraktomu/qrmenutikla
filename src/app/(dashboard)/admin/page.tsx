@@ -104,12 +104,12 @@ export default async function AdminOverviewPage() {
         <Link href="/admin/users" className="p-6 rounded-2xl border border-stone-200 bg-white hover:border-indigo-500/35 hover:shadow-md transition-all duration-300 flex justify-between items-start group">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Kayıtlı Kullanıcı</span>
-            <div className="text-3xl font-extrabold text-black mt-2 group-hover:text-indigo-650 transition-colors">{totalUsers}</div>
+            <div className="text-3xl font-extrabold text-black mt-2 group-hover:text-indigo-600 transition-colors">{totalUsers}</div>
             <span className="text-[10px] text-indigo-600 font-semibold mt-1.5 flex items-center gap-1">
               Kullanıcıları Yönet <ArrowRight className="w-3 h-3" />
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-650 border border-indigo-500/10">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 border border-indigo-500/10">
             <Users className="w-5 h-5" />
           </div>
         </Link>
@@ -146,12 +146,12 @@ export default async function AdminOverviewPage() {
         <div className="p-6 rounded-2xl border border-stone-200 bg-white flex justify-between items-start shadow-sm">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Öngörülen MRR Geliri</span>
-            <div className="text-3xl font-extrabold text-indigo-650 mt-2">{mrr.toLocaleString('tr-TR')} TL</div>
+            <div className="text-3xl font-extrabold text-indigo-600 mt-2">{mrr.toLocaleString('tr-TR')} TL</div>
             <span className="text-[10px] text-stone-400 font-semibold mt-1.5 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5 text-indigo-500" /> Tahmini Aylık Gelir
             </span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-650 border border-indigo-500/20">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center text-indigo-600 border border-indigo-500/20">
             <DollarSign className="w-5 h-5" />
           </div>
         </div>
@@ -167,7 +167,7 @@ export default async function AdminOverviewPage() {
               <UserCheck className="w-5 h-5 text-indigo-600" />
               Son Katılan Kullanıcılar
             </h3>
-            <Link href="/admin/users" className="text-xs text-indigo-650 hover:underline font-bold">Tümünü Gör</Link>
+            <Link href="/admin/users" className="text-xs text-indigo-600 hover:underline font-bold">Tümünü Gör</Link>
           </div>
           
           <div className="flex flex-col divide-y divide-stone-100">

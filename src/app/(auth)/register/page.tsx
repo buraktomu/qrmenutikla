@@ -181,7 +181,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Password Inputs */}
-            <div className="grid grid-cols-2 gap-3 mt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-stone-600">Şifre</label>
                 <div className="relative">
@@ -214,10 +214,10 @@ export default function RegisterPage() {
             </div>
 
             {/* Submit Button */}
-            <button
+             <button
               type="submit"
               disabled={loading}
-              className="mt-3 w-full py-3.5 rounded-xl bg-indigo-650 hover:bg-indigo-600 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15 active:scale-98 disabled:opacity-50 disabled:pointer-events-none"
+              className="mt-3 w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15 active:scale-98 disabled:opacity-50 disabled:pointer-events-none"
             >
               {loading ? 'Hesap Oluşturuluyor...' : 'Kayıt Ol'}
               {!loading && <ArrowRight className="w-4 h-4" />}

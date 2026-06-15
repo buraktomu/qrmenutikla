@@ -67,12 +67,12 @@ function CheckoutSimulatorContent() {
       {/* Background glow */}
       <div className="absolute w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-3xl -top-10 -left-10 pointer-events-none -z-10" />
 
-      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch bg-zinc-900/40 border border-zinc-800 rounded-3xl p-8 backdrop-blur-md shadow-2xl relative">
+      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch bg-zinc-900/40 border border-zinc-800 rounded-3xl p-5 sm:p-8 backdrop-blur-md shadow-2xl relative">
         
         {/* Cancel / back */}
-        <Link 
+        <Link
           href={cancelUrl}
-          className="absolute -top-12 left-2 flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
+          className="md:absolute md:-top-12 md:left-2 col-span-full flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors -mt-2 mb-2 md:m-0"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Ödemeyi İptal Et ve Geri Dön

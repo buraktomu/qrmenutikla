@@ -129,7 +129,7 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full py-3.5 rounded-xl bg-indigo-650 hover:bg-indigo-600 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15 active:scale-98 disabled:opacity-50 disabled:pointer-events-none"
+              className="mt-2 w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15 active:scale-98 disabled:opacity-50 disabled:pointer-events-none"
             >
               {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
               {!loading && <ArrowRight className="w-4 h-4" />}

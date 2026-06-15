@@ -100,7 +100,7 @@ export default function SubscriptionTable({ initialBusinesses }: SubscriptionTab
             <div className="text-3xl font-extrabold text-black mt-2">{activeCount}</div>
             <span className="text-[10px] text-stone-400 font-semibold mt-1">Sistem genelindeki aktif işletme lisansları</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-650 border border-indigo-500/10">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 border border-indigo-500/10">
             <CreditCard className="w-5 h-5" />
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function SubscriptionTable({ initialBusinesses }: SubscriptionTab
         <div className="p-6 rounded-2xl border border-stone-200 bg-white flex justify-between items-start shadow-sm">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-stone-500 uppercase tracking-wider">Aylık Tekrarlayan Gelir (MRR)</span>
-            <div className="text-3xl font-extrabold text-indigo-650 mt-2">{totalMrr.toLocaleString('tr-TR')} TL</div>
+            <div className="text-3xl font-extrabold text-indigo-600 mt-2">{totalMrr.toLocaleString('tr-TR')} TL</div>
             <span className="text-[10px] text-stone-400 font-semibold mt-1">Aktif lisanslardan öngörülen aylık kazanç</span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/10">
@@ -171,8 +171,8 @@ export default function SubscriptionTable({ initialBusinesses }: SubscriptionTab
 
       </div>
 
-      {/* Subscription Table */}
-      <div className="overflow-x-auto border border-stone-200 rounded-2xl bg-white shadow-sm">
+      {/* Subscription Table — desktop */}
+      <div className="hidden md:block overflow-x-auto border border-stone-200 rounded-2xl bg-white shadow-sm">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-stone-200 text-stone-500 font-black uppercase tracking-wider bg-stone-50/50">
@@ -292,6 +292,88 @@ export default function SubscriptionTable({ initialBusinesses }: SubscriptionTab
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Subscriptions — mobile cards */}
+      <div className="md:hidden flex flex-col gap-3">
+        {filteredBusinesses.length > 0 ? (
+          filteredBusinesses.map((biz) => {
+            const sub = biz.subscription;
+            const isActive = sub?.status === 'ACTIVE';
+            const planId = sub?.planId || 'starter';
+            const isOpLoading = loading === biz.id;
+
+            let priceLabel = '199 TL';
+            if (planId === 'pro') priceLabel = '399 TL';
+            if (planId === 'premium') priceLabel = '699 TL';
+
+            return (
+              <div key={biz.id} className="border border-stone-200 rounded-2xl bg-white shadow-sm p-4 flex flex-col gap-3 text-black">
+                {/* Top: name + status */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-extrabold text-black text-sm truncate">{biz.name}</span>
+                    <span className="text-[10px] text-stone-500 font-mono font-medium truncate">{biz.owner.email}</span>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-black shrink-0 ${
+                    isActive
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600'
+                      : 'bg-red-500/10 border-red-500/20 text-red-650'
+                  }`}>
+                    {isActive ? <CheckCircle2 className="w-3 h-3" /> : <AlertOctagon className="w-3 h-3" />}
+                    {isActive ? 'Aktif' : (sub?.status || 'İPTAL')}
+                  </span>
+                </div>
+
+                {/* Details */}
+                <div className="grid grid-cols-2 gap-3 text-xs border-t border-stone-100 pt-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">Paket</span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-black border tracking-wider uppercase w-fit ${
+                      planId === 'premium' ? 'bg-indigo-50 border-indigo-150 text-indigo-600' :
+                      planId === 'pro' ? 'bg-purple-50 border-purple-150 text-purple-600' :
+                      'bg-stone-50 border-stone-250 text-stone-600'
+                    }`}>
+                      {planId}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">Aylık Fiyat</span>
+                    <span className="font-extrabold text-black">{priceLabel} / ay</span>
+                  </div>
+                  <div className="flex flex-col gap-1 col-span-2">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">Bitiş Tarihi</span>
+                    {sub?.currentPeriodEnd ? (
+                      <span className="text-stone-500 font-medium flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 opacity-60" />
+                        {new Date(sub.currentPeriodEnd).toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </span>
+                    ) : (
+                      <span className="text-stone-400 italic">Sınırsız / Yok</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 col-span-2">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">Lisans Güncelle</span>
+                    <select
+                      disabled={isOpLoading}
+                      value={planId}
+                      onChange={(e) => handlePlanChange(biz.id, e.target.value)}
+                      className="bg-white border border-stone-250 rounded-lg px-2.5 py-1.5 text-xs outline-none text-black font-extrabold cursor-pointer focus:border-indigo-500 transition-colors w-full"
+                    >
+                      <option value="starter">Başlangıç</option>
+                      <option value="pro">Pro</option>
+                      <option value="premium">Premium</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="p-8 text-center text-stone-400 italic border border-stone-200 rounded-2xl bg-white">
+            Abonelik bulunamadı.
+          </div>
+        )}
       </div>
 
     </div>

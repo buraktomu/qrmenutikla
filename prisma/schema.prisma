@@ -135,3 +135,12 @@ model VisitorLog {
   @@unique([businessId, date])
   @@index([businessId])
 }
+
+// Platform-wide feature flags controlled by the Super Admin.
+// Single row with a fixed id of "global".
+model PlatformSetting {
+  id              String   @id @default("global")
+  aiEnabled       Boolean  @default(true) // Master switch for all AI features
+  orderingEnabled Boolean  @default(true) // Master switch for ordering / waiter-call
+  updatedAt       DateTime @updatedAt
+}

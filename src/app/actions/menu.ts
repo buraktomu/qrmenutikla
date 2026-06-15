@@ -4,12 +4,15 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import { 
-  generateProductDescription, 
-  predictCaloriesAndMacros, 
-  suggestProductCategory, 
-  generateCampaignText 
+import {
+  generateProductDescription,
+  predictCaloriesAndMacros,
+  suggestProductCategory,
+  generateCampaignText
 } from '@/lib/openai';
+import { getPlatformSettings } from '@/lib/settings';
+
+const AI_DISABLED_MSG = 'Yapay zeka özelliği yönetici tarafından geçici olarak kapatılmıştır.';
 
 // -------------------------------------------------------------
 // SCHEMAS
@@ -292,6 +295,8 @@ export async function deleteProduct(businessId: string, categoryId: string, prod
 // AI ACTIONS
 // -------------------------------------------------------------
 export async function getAIDescription(productName: string, categoryName: string) {
+  const settings = await getPlatformSettings();
+  if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
   try {
     const desc = await generateProductDescription(productName, categoryName);
     return { success: true, result: desc };
@@ -301,6 +306,8 @@ export async function getAIDescription(productName: string, categoryName: string
 }
 
 export async function getAIMacros(productName: string, description: string) {
+  const settings = await getPlatformSettings();
+  if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
   try {
     const macros = await predictCaloriesAndMacros(productName, description);
     return { success: true, result: macros };
@@ -310,6 +317,8 @@ export async function getAIMacros(productName: string, description: string) {
 }
 
 export async function getAICategory(productName: string) {
+  const settings = await getPlatformSettings();
+  if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
   try {
     const cat = await suggestProductCategory(productName);
     return { success: true, result: cat };
@@ -319,6 +328,8 @@ export async function getAICategory(productName: string) {
 }
 
 export async function getAICampaign(productName: string, discount: number) {
+  const settings = await getPlatformSettings();
+  if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
   try {
     const campaign = await generateCampaignText(productName, discount);
     return { success: true, result: campaign };

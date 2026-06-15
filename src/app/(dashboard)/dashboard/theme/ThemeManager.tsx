@@ -199,7 +199,7 @@ export default function ThemeManager({ business, hasThemeSelectionLimit }: Theme
             className={`px-6 py-3.5 rounded-xl text-white text-xs font-bold tracking-wider transition-all flex items-center gap-2.5 shadow-lg active:scale-98 disabled:opacity-50 ${
               activePreviewTheme?.isPremiumAddon 
                 ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/15' 
-                : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-650/15'
+                : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/15'
             }`}
           >
             {activePreviewTheme?.isPremiumAddon ? (
@@ -668,7 +668,7 @@ export default function ThemeManager({ business, hasThemeSelectionLimit }: Theme
               {/* Email Line */}
               <a
                 href={`mailto:destek@qrmenuai.com?subject=Premium%20Tema%20Talebi%20-%20${encodeURIComponent(premiumThemeContact.name)}&body=Merhaba,%0D%0A%0D%0A${encodeURIComponent(business.name)}%20işletmem%20için%20${encodeURIComponent(premiumThemeContact.name)}%20premium%20temasını%20satın%20almak%20ve%20aktif%20etmek%20istiyorum.%20Detayları%20ve%20ödeme%20yöntemlerini%20paylaşabilir%20misiniz?`}
-                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-650/15"
+                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/15"
               >
                 <Mail className="w-4.5 h-4.5" />
                 E-POSTA İLE TALEBİ İLET

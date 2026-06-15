@@ -70,6 +70,8 @@ type QrMenuProps = {
   categories: CategoryType[];
   hasWhatsAppOrder: boolean;
   hasNutrients: boolean;
+  // When true, the menu is display-only: no cart, ordering or waiter-call UI.
+  viewOnly?: boolean;
 };
 
 type CartItem = {
@@ -565,7 +567,7 @@ function SplashScreen({ business, theme, leaving, onEnter }: SplashProps) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutrients }: QrMenuProps) {
+export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutrients, viewOnly = false }: QrMenuProps) {
   const { showToast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -953,7 +955,7 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
       )}
 
       {/* ── FLOATING CART BUTTON ────────────────────────────────────────────── */}
-      {business.allowOrders ? (
+      {!viewOnly && (business.allowOrders ? (
         cart.length > 0 && (
           <div className="fixed bottom-6 inset-x-6 z-40 max-w-sm mx-auto">
             <button
@@ -988,7 +990,7 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
             </button>
           </div>
         )
-      )}
+      ))}
 
       {/* ── PRODUCT DETAIL SHEET ─────────────────────────────────────────────── */}
       {selectedProduct && (
@@ -1044,31 +1046,33 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
               </div>
             )}
 
-            <div className="mt-8 flex gap-3">
-              {getProductQuantity(selectedProduct.id) > 0 && (
-                <div className="flex items-center gap-4 bg-current/5 border border-current/10 px-4 rounded-2xl">
-                  <button onClick={() => removeFromCart(selectedProduct.id)} className="p-1 text-current"><Minus className="w-4 h-4" /></button>
-                  <span className="text-sm font-black font-mono min-w-[20px] text-center">{getProductQuantity(selectedProduct.id)}</span>
-                  <button onClick={() => addToCart(selectedProduct)} className="p-1 text-current"><Plus className="w-4 h-4" /></button>
-                </div>
-              )}
-              <button
-                onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
-                className={`flex-1 py-4 rounded-2xl ${theme.accentColor} font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg`}
-              >
-                <Plus className="w-4 h-4" />
-                {business.allowOrders
-                  ? (getProductQuantity(selectedProduct.id) > 0 ? 'Daha Fazla Ekle' : 'Sepete Ekle')
-                  : (getProductQuantity(selectedProduct.id) > 0 ? 'Daha Fazla Ekle' : 'Hesabıma Ekle')
-                }
-              </button>
-            </div>
+            {!viewOnly && (
+              <div className="mt-8 flex gap-3">
+                {getProductQuantity(selectedProduct.id) > 0 && (
+                  <div className="flex items-center gap-4 bg-current/5 border border-current/10 px-4 rounded-2xl">
+                    <button onClick={() => removeFromCart(selectedProduct.id)} className="p-1 text-current"><Minus className="w-4 h-4" /></button>
+                    <span className="text-sm font-black font-mono min-w-[20px] text-center">{getProductQuantity(selectedProduct.id)}</span>
+                    <button onClick={() => addToCart(selectedProduct)} className="p-1 text-current"><Plus className="w-4 h-4" /></button>
+                  </div>
+                )}
+                <button
+                  onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
+                  className={`flex-1 py-4 rounded-2xl ${theme.accentColor} font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg`}
+                >
+                  <Plus className="w-4 h-4" />
+                  {business.allowOrders
+                    ? (getProductQuantity(selectedProduct.id) > 0 ? 'Daha Fazla Ekle' : 'Sepete Ekle')
+                    : (getProductQuantity(selectedProduct.id) > 0 ? 'Daha Fazla Ekle' : 'Hesabıma Ekle')
+                  }
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* ── CART DRAWER ──────────────────────────────────────────────────────── */}
-      {cartOpen && (
+      {!viewOnly && cartOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-end justify-center">
           <div className="absolute inset-0" onClick={() => setCartOpen(false)} />
           <div className={`w-full max-w-md ${theme.bgCard} ${theme.borderColor} rounded-t-[32px] p-6 shadow-2xl flex flex-col gap-6 relative z-10 max-h-[90vh] overflow-y-auto border-t`}

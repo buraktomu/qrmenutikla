@@ -125,8 +125,8 @@ export default function UserTable({ initialUsers }: UserTableProps) {
 
       </div>
 
-      {/* Users Table */}
-      <div className="overflow-x-auto border border-stone-200 rounded-2xl bg-white shadow-sm">
+      {/* Users Table — desktop */}
+      <div className="hidden md:block overflow-x-auto border border-stone-200 rounded-2xl bg-white shadow-sm">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-stone-200 text-stone-500 font-black uppercase tracking-wider bg-stone-50/50">
@@ -227,7 +227,7 @@ export default function UserTable({ initialUsers }: UserTableProps) {
                             href={`/menu/${business.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg bg-stone-50 border border-stone-200 text-stone-600 hover:text-indigo-650 hover:bg-indigo-50 hover:border-indigo-100 transition-colors"
+                            className="p-1.5 rounded-lg bg-stone-50 border border-stone-200 text-stone-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-colors"
                             title="QR Menüyü Canlı Gör"
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -256,6 +256,115 @@ export default function UserTable({ initialUsers }: UserTableProps) {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Users — mobile cards */}
+      <div className="md:hidden flex flex-col gap-3">
+        {filteredUsers.length > 0 ? (
+          filteredUsers.map((user) => {
+            const business = user.businesses[0];
+            const plan = business?.subscription?.planId || null;
+            const isSuperAdmin = user.role === 'SUPER_ADMIN';
+            const isOpLoading = loading === user.id;
+
+            return (
+              <div key={user.id} className="border border-stone-200 rounded-2xl bg-white shadow-sm p-4 flex flex-col gap-3 text-black">
+                {/* Top: identity + actions */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center border shrink-0 ${
+                      isSuperAdmin
+                        ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600'
+                        : 'bg-stone-100 border-stone-200 text-stone-600'
+                    }`}>
+                      {isSuperAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-extrabold text-black text-sm truncate">{user.name}</span>
+                      <span className="text-[10px] text-stone-500 font-mono font-medium truncate">{user.email}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {business && (
+                      <a
+                        href={`/menu/${business.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-lg bg-stone-50 border border-stone-200 text-stone-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-colors"
+                        title="QR Menüyü Canlı Gör"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                    <button
+                      disabled={isOpLoading}
+                      onClick={() => handleDelete(user.id, user.name)}
+                      className="p-2 rounded-lg bg-stone-50 border border-stone-200 text-stone-600 hover:text-red-650 hover:bg-red-50 hover:border-red-100 transition-colors disabled:opacity-50"
+                      title="Kullanıcıyı Sil"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="grid grid-cols-2 gap-3 text-xs border-t border-stone-100 pt-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">Rol</span>
+                    <button
+                      disabled={isOpLoading}
+                      onClick={() => handleRoleChange(user.id, user.role)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black transition-all active:scale-95 disabled:opacity-50 w-fit ${
+                        isSuperAdmin
+                          ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600'
+                          : 'bg-stone-50 border-stone-200 text-stone-600'
+                      }`}
+                      title="Rolü değiştirmek için tıklayın"
+                    >
+                      {isSuperAdmin ? 'Süper Admin' : 'İşletme Sahibi'}
+                      <ChevronDown className="w-3 h-3 opacity-60" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">Abonelik</span>
+                    {business ? (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase border tracking-wider w-fit ${
+                        plan === 'premium' ? 'bg-indigo-50 border-indigo-150 text-indigo-600' :
+                        plan === 'pro' ? 'bg-purple-50 border-purple-150 text-purple-600' :
+                        'bg-stone-50 border-stone-250 text-stone-600'
+                      }`}>
+                        {plan || 'starter'}
+                      </span>
+                    ) : (
+                      <span className="text-stone-400 font-mono font-semibold">-</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 col-span-2">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">İşletme</span>
+                    {business ? (
+                      <div className="flex flex-col">
+                        <span className="text-black font-bold">{business.name}</span>
+                        <span className="text-[10px] text-stone-400 font-mono font-medium">/menu/{business.slug}</span>
+                      </div>
+                    ) : (
+                      <span className="text-stone-400 italic">İşletme Kurulmamış</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 col-span-2">
+                    <span className="text-[9px] text-stone-400 font-black uppercase tracking-wider">Kayıt Tarihi</span>
+                    <span className="text-stone-500 font-medium">
+                      {new Date(user.createdAt).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="p-8 text-center text-stone-400 italic border border-stone-200 rounded-2xl bg-white">
+            Kullanıcı bulunamadı.
+          </div>
+        )}
       </div>
 
     </div>

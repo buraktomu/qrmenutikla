@@ -335,8 +335,9 @@ export default function LandingPage() {
         { opacity: 0, y: 28 },
         { opacity: 1, y: 0, duration: 0.9, ease: 'expo.out', stagger: 0.09, delay: 0.1 }
       );
-      /* Sinematik dalış: hero pinlenir, scroll kamerayı masaya daldırır */
-      if (heroRef.current) {
+      /* Sinematik dalış sadece masaüstünde: mobilde pin/telefon bindirmesi metni kapatıyor */
+      const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+      if (heroRef.current && isDesktop) {
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: heroRef.current,
@@ -530,7 +531,7 @@ export default function LandingPage() {
         {/* Final sahnesi: QR okundu → telefon menüyü gösterir */}
         <div
           id="hero-menu-phone"
-          className="absolute z-20 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[16%] top-1/2 -translate-y-1/2 w-[250px] md:w-[300px] opacity-0 pointer-events-none"
+          className="hidden md:block absolute z-20 md:right-[16%] top-1/2 -translate-y-1/2 w-[300px] opacity-0 pointer-events-none"
         >
           {/* Durum çipi */}
           <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-stone-900 text-white text-xs font-bold whitespace-nowrap shadow-lg flex items-center gap-1.5">
@@ -588,7 +589,7 @@ export default function LandingPage() {
         {/* Scroll ipucu */}
         <div
           id="hero-hint"
-          className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 pointer-events-none"
+          className="hidden md:flex absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex-col items-center gap-2 pointer-events-none"
         >
           <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-stone-400">
             Kaydır — masaya yaklaş

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useToast } from '@/components/ToastProvider';
 import { COMMON_GALLERY } from '@/config/gallery';
 import { 
@@ -25,10 +25,12 @@ import {
   ToggleLeft, 
   ToggleRight, 
   Image as ImageIcon, 
-  Save, 
+  Save,
   X,
   Flame,
-  Volume2
+  Volume2,
+  UploadCloud,
+  Loader2
 } from 'lucide-react';
 
 type ProductType = {
@@ -106,6 +108,47 @@ export default function MenuManager({
   const [campaignProd, setCampaignProd] = useState<ProductType | null>(null);
   const [campaignText, setCampaignText] = useState('');
   const [discountPercent, setDiscountPercent] = useState(15);
+
+  // Image upload (device gallery / camera / drag-drop)
+  const [uploadingProdImage, setUploadingProdImage] = useState(false);
+  const [uploadingCatImage, setUploadingCatImage] = useState(false);
+  const prodImageInputRef = useRef<HTMLInputElement>(null);
+  const catImageInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadImageFile = async (file: File): Promise<string | null> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.url) return data.url as string;
+      showToast(data.error || 'Görsel yüklenemedi.', 'error');
+      return null;
+    } catch {
+      showToast('Görsel yükleme hatası oluştu.', 'error');
+      return null;
+    }
+  };
+
+  const handleProdImageSelect = async (file: File) => {
+    setUploadingProdImage(true);
+    const url = await uploadImageFile(file);
+    if (url) {
+      setPImageUrl(url);
+      showToast('Görsel başarıyla yüklendi.', 'success');
+    }
+    setUploadingProdImage(false);
+  };
+
+  const handleCatImageSelect = async (file: File) => {
+    setUploadingCatImage(true);
+    const url = await uploadImageFile(file);
+    if (url) {
+      setCatImageUrlInput(url);
+      showToast('Görsel başarıyla yüklendi.', 'success');
+    }
+    setUploadingCatImage(false);
+  };
 
   const activeCategory = categories.find((c) => c.id === activeCategoryId);
 
@@ -349,7 +392,7 @@ export default function MenuManager({
         {/* Create Category Trigger */}
         <button
           onClick={() => handleOpenCatModal(null)}
-          className="px-4 py-2.5 rounded-xl bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/10 active:scale-98"
+          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/10 active:scale-98"
         >
           <Plus className="w-4 h-4" />
           Kategori Ekle
@@ -369,7 +412,7 @@ export default function MenuManager({
               >
                 <button
                   onClick={() => setActiveCategoryId(cat.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${isActive ? 'text-indigo-650' : 'text-black hover:text-indigo-650'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${isActive ? 'text-indigo-600' : 'text-black hover:text-indigo-600'}`}
                 >
                   {cat.name} ({cat.products.length})
                 </button>
@@ -415,13 +458,13 @@ export default function MenuManager({
       {/* PRODUCTS LIST SECTION */}
       {activeCategory ? (
         <div className="flex flex-col gap-6">
-          <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-white p-4 rounded-xl border border-stone-200 shadow-sm">
             <div className="text-xs text-black font-semibold">
               Mevcut Seçim: <strong className="text-black font-extrabold">{activeCategory.name}</strong> ({activeCategory.products.length} Ürün)
             </div>
             <button
               onClick={() => handleOpenProdModal(null)}
-              className="px-3.5 py-2 rounded-xl bg-indigo-655 hover:bg-indigo-600 text-white text-xs font-black flex items-center gap-1.5 transition-all active:scale-98 shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-indigo-655 hover:bg-indigo-600 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm shrink-0"
             >
               <Plus className="w-4 h-4" />
               Ürün Ekle
@@ -458,7 +501,7 @@ export default function MenuManager({
                     {prod.description && (
                       <p className="text-xs text-black font-medium line-clamp-1 mt-0.5">{prod.description}</p>
                     )}
-                    <div className="text-xs font-extrabold text-indigo-650 mt-1">{prod.price.toFixed(2)} TL</div>
+                    <div className="text-xs font-extrabold text-indigo-600 mt-1">{prod.price.toFixed(2)} TL</div>
                     
                     {/* Nutrient details preview */}
                     {hasNutrients && prod.calories && (
@@ -485,7 +528,7 @@ export default function MenuManager({
                           setCampaignText('');
                           setCampaignModalOpen(true);
                         }}
-                        className="p-2 rounded-xl bg-stone-50 hover:bg-indigo-50 border border-stone-200 text-indigo-650 hover:text-indigo-700 transition-colors"
+                        className="p-2 rounded-xl bg-stone-50 hover:bg-indigo-50 border border-stone-200 text-indigo-600 hover:text-indigo-700 transition-colors"
                         title="AI Kampanya Üret"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
@@ -547,18 +590,40 @@ export default function MenuManager({
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-black">Kategori Görseli URL <span className="font-normal text-stone-400">(isteğe bağlı)</span></label>
-                <input
-                  type="url"
-                  placeholder="https://... (boş bırakırsanız ilk ürün görseli kullanılır)"
-                  value={catImageUrlInput}
-                  onChange={(e) => setCatImageUrlInput(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white text-sm outline-none text-black"
-                />
+                <label className="text-xs font-bold text-black">Kategori Görseli <span className="font-normal text-stone-400">(isteğe bağlı)</span></label>
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleCatImageSelect(f); }}
+                  onClick={() => catImageInputRef.current?.click()}
+                  className="border-2 border-dashed border-stone-200 hover:border-indigo-500 rounded-xl p-5 bg-stone-50/50 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={catImageInputRef}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCatImageSelect(f); }}
+                    className="hidden"
+                  />
+                  {uploadingCatImage ? (
+                    <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                  ) : (
+                    <UploadCloud className="w-7 h-7 text-stone-400" />
+                  )}
+                  <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
+                  <span className="text-[10px] text-stone-400 font-bold">Boş bırakırsanız ilk ürün görseli kullanılır</span>
+                </div>
                 {catImageUrlInput && (
-                  <div className="w-full h-28 rounded-xl overflow-hidden border border-stone-200 mt-1">
+                  <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200 mt-1">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={catImageUrlInput} alt="Önizleme" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                    <img src={catImageUrlInput} alt="Önizleme" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setCatImageUrlInput('')}
+                      className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-white/90 border border-stone-200 text-red-600 hover:bg-red-50 transition-colors"
+                      title="Görseli kaldır"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
               </div>
@@ -566,7 +631,7 @@ export default function MenuManager({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 rounded-xl bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 shadow-md"
+                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 shadow-md"
               >
                 <Save className="w-4 h-4" />
                 {loading ? 'Kaydediliyor...' : 'Kaydet'}
@@ -655,7 +720,7 @@ export default function MenuManager({
                     onClick={() => setPImageType('url')}
                     className={`px-3 py-1.5 rounded-lg font-black transition-all ${pImageType === 'url' ? 'bg-white text-black shadow-sm' : 'text-black/60'}`}
                   >
-                    Görsel Bağlantısı (URL)
+                    Cihazdan Yükle
                   </button>
                   <button
                     type="button"
@@ -667,13 +732,43 @@ export default function MenuManager({
                 </div>
 
                 {pImageType === 'url' ? (
-                  <input
-                    type="text"
-                    placeholder="https://images.unsplash.com/... (Görsel URL)"
-                    value={pImageUrl}
-                    onChange={(e) => setPImageUrl(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white text-xs outline-none text-black font-mono font-bold"
-                  />
+                  <div className="flex flex-col gap-2">
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleProdImageSelect(f); }}
+                      onClick={() => prodImageInputRef.current?.click()}
+                      className="border-2 border-dashed border-stone-200 hover:border-indigo-500 rounded-xl p-5 bg-stone-50/50 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2"
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={prodImageInputRef}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleProdImageSelect(f); }}
+                        className="hidden"
+                      />
+                      {uploadingProdImage ? (
+                        <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                      ) : (
+                        <UploadCloud className="w-7 h-7 text-stone-400" />
+                      )}
+                      <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
+                      <span className="text-[10px] text-stone-400 font-bold">PNG, JPG · telefonda kameradan da çekebilirsiniz</span>
+                    </div>
+                    {pImageUrl && (
+                      <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={pImageUrl} alt="Önizleme" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setPImageUrl('')}
+                          className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-white/90 border border-stone-200 text-red-600 hover:bg-red-50 transition-colors"
+                          title="Görseli kaldır"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="relative">
                     <select
@@ -717,7 +812,7 @@ export default function MenuManager({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-4 gap-3 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                     <div className="flex flex-col gap-1">
                       <label className="text-[10px] text-black font-bold">Kalori (kcal)</label>
                       <input
@@ -777,7 +872,7 @@ export default function MenuManager({
                   className="text-black transition-colors"
                 >
                   {pActive ? (
-                    <ToggleRight className="w-9 h-9 text-indigo-650" />
+                    <ToggleRight className="w-9 h-9 text-indigo-600" />
                   ) : (
                     <ToggleLeft className="w-9 h-9 text-stone-300" />
                   )}
@@ -788,7 +883,7 @@ export default function MenuManager({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 mt-2 shadow-md"
+                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 mt-2 shadow-md"
               >
                 <Save className="w-4 h-4" />
                 {loading ? 'Kaydediliyor...' : 'Ürünü Kaydet'}
@@ -806,7 +901,7 @@ export default function MenuManager({
           <div className="w-full max-w-md bg-white border border-stone-200 rounded-3xl p-6 shadow-2xl animate-fade-in-up">
             <div className="flex justify-between items-center border-b border-stone-150 pb-3 mb-5">
               <h4 className="text-sm font-black text-black flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-indigo-650" />
+                <Sparkles className="w-4 h-4 text-indigo-600" />
                 AI Sosyal Medya Kampanyası
               </h4>
               <button onClick={() => setCampaignModalOpen(false)} className="text-black hover:text-stone-700">
@@ -836,7 +931,7 @@ export default function MenuManager({
               <button
                 onClick={triggerCampaignText}
                 disabled={aiLoading.campaign}
-                className="w-full py-2 bg-indigo-650 hover:bg-indigo-600 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 disabled:opacity-50 shadow-md"
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-600 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 disabled:opacity-50 shadow-md"
               >
                 <Volume2 className="w-3.5 h-3.5" />
                 {aiLoading.campaign ? 'Metin Hazırlanıyor...' : 'Reklam Metni Üret'}

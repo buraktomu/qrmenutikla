@@ -109,7 +109,7 @@ export default async function DashboardPage() {
           href={`/menu/${business.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-stone-250 hover:bg-stone-50 text-sm font-bold text-indigo-650 transition-all shadow-md self-start md:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-stone-250 hover:bg-stone-50 text-sm font-bold text-indigo-600 transition-all shadow-md self-start md:self-auto"
         >
           Canlı QR Menüyü Aç
           <ExternalLink className="w-4 h-4" />
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
             <div className="text-3xl font-extrabold text-black mt-2">{totalVisitorsLast7Days}</div>
             <span className="text-[10px] text-black font-semibold block mt-1">QR Kod tarama trafiği</span>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-650 border border-indigo-500/10">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 border border-indigo-500/10">
             <Users className="w-5 h-5" />
           </div>
         </div>
@@ -258,7 +258,7 @@ export default async function DashboardPage() {
               </div>
               <div className="w-full h-2 rounded bg-stone-100 overflow-hidden">
                 <div 
-                  className="h-full bg-indigo-650 rounded transition-all duration-500" 
+                  className="h-full bg-indigo-600 rounded transition-all duration-500" 
                   style={{ width: `${Math.min((totalCategories / planDetails.limits.maxCategories) * 100, 100)}%` }}
                 />
               </div>
@@ -281,7 +281,7 @@ export default async function DashboardPage() {
             {/* AI Capability Banner */}
             <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-150 flex items-center justify-between text-xs">
               <span className="text-black font-bold">Yapay Zeka Erişimi</span>
-              <span className={`font-extrabold ${planDetails.features.find((f)=>f.text.includes('AI'))?.included ? 'text-indigo-650' : 'text-stone-400'}`}>
+              <span className={`font-extrabold ${planDetails.features.find((f)=>f.text.includes('AI'))?.included ? 'text-indigo-600' : 'text-stone-400'}`}>
                 {planDetails.features.find((f)=>f.text.includes('AI'))?.included ? 'Aktif' : 'Pasif'}
               </span>
             </div>
@@ -291,7 +291,7 @@ export default async function DashboardPage() {
             href="/dashboard/billing"
             className="w-full py-2.5 rounded-xl bg-white border border-stone-250 hover:bg-stone-50 text-center text-xs font-extrabold text-black transition-all flex items-center justify-center gap-2 shadow-sm"
           >
-            <CreditCard className="w-4 h-4 text-indigo-650" />
+            <CreditCard className="w-4 h-4 text-indigo-600" />
             Planı Yükselt / Faturalama
           </Link>
         </div>

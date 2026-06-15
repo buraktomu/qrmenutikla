@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useToast } from '@/components/ToastProvider';
 import { addGalleryImage, deleteGalleryImage } from '@/app/actions/admin';
-import { 
-  Plus, 
-  Trash2, 
+import {
+  Plus,
+  Trash2,
   Save,
-  Image as ImageIcon
+  Image as ImageIcon,
+  UploadCloud,
+  Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -32,6 +34,28 @@ export default function GalleryManager({ initialImages }: GalleryManagerProps) {
   const [category, setCategory] = useState('Kahve');
   const [title, setTitle] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = async (file: File) => {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.url) {
+        setImageUrl(data.url);
+        showToast('Görsel başarıyla yüklendi.', 'success');
+      } else {
+        showToast(data.error || 'Görsel yüklenemedi.', 'error');
+      }
+    } catch {
+      showToast('Görsel yükleme hatası oluştu.', 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleAddImage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +97,7 @@ export default function GalleryManager({ initialImages }: GalleryManagerProps) {
       {/* Form Section */}
       <form onSubmit={handleAddImage} className="lg:col-span-4 p-6 rounded-2xl border border-stone-200 bg-white flex flex-col gap-4 shadow-sm">
         <h3 className="text-sm font-black text-black flex items-center gap-2 border-b border-stone-100 pb-3">
-          <Plus className="w-4 h-4 text-indigo-650" />
+          <Plus className="w-4 h-4 text-indigo-600" />
           Galeriye Görsel Ekle
         </h3>
         
@@ -104,23 +128,50 @@ export default function GalleryManager({ initialImages }: GalleryManagerProps) {
           />
         </div>
 
-        {/* Image URL */}
+        {/* Image Upload */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-black text-stone-500 uppercase tracking-wider">Görsel URL Adresi</label>
-          <input
-            type="url"
-            required
-            placeholder="https://images.unsplash.com/..."
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-stone-50 border border-stone-250 text-xs text-black font-mono font-medium outline-none focus:border-indigo-500 transition-all placeholder:text-stone-400"
-          />
+          <label className="text-[10px] font-black text-stone-500 uppercase tracking-wider">Görsel Dosyası</label>
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleImageSelect(f); }}
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-stone-250 hover:border-indigo-500 rounded-xl p-5 bg-stone-50/50 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2"
+          >
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageSelect(f); }}
+              className="hidden"
+            />
+            {uploading ? (
+              <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+            ) : (
+              <UploadCloud className="w-7 h-7 text-stone-400" />
+            )}
+            <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
+            <span className="text-[10px] text-stone-400 font-bold">PNG, JPG</span>
+          </div>
+          {imageUrl && (
+            <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200 mt-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl} alt="Önizleme" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setImageUrl('')}
+                className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-white/90 border border-stone-200 text-red-600 hover:bg-red-50 transition-colors"
+                title="Görseli kaldır"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full mt-2 py-2.5 rounded-xl bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-98 disabled:opacity-50 shadow-md"
+          disabled={loading || uploading || !imageUrl}
+          className="w-full mt-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-600 text-white text-xs font-black transition-all flex items-center justify-center gap-1.5 active:scale-98 disabled:opacity-50 shadow-md"
         >
           <Save className="w-4 h-4" />
           {loading ? 'Ekleniyor...' : 'Galeriye Kaydet'}

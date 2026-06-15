@@ -2,6 +2,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { getPlatformSettings } from '@/lib/settings';
 import MenuManager from './MenuManager';
 
 export default async function MenuPage() {
@@ -45,9 +46,10 @@ export default async function MenuPage() {
     );
   }
 
-  // Plan capability configs
+  // Plan capability configs (combined with platform-wide flags)
+  const settings = await getPlatformSettings();
   const plan = business.subscription?.plan;
-  const hasAI = plan?.hasAI ?? false;
+  const hasAI = (plan?.hasAI ?? false) && settings.aiEnabled;
   const hasNutrients = plan?.hasNutrients ?? false;
   const hasWhatsApp = plan?.hasWhatsAppOrder ?? false;
 

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, Playfair_Display, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/SessionProvider";
@@ -22,6 +22,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI Destekli QR Menü Platformu | Akıllı SaaS Menü Sistemi",
   description: "Restoran ve kafeler için yapay zeka destekli, modern, şık ve mobil uyumlu QR menü kiralama platformu.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

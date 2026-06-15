@@ -17,7 +17,8 @@ import {
   User,
   Palette,
   Users,
-  Building2
+  Building2,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
@@ -67,6 +68,7 @@ export default function DashboardLayout({
         { href: '/admin/businesses', label: 'İşletme Yönetimi', icon: Building2 },
         { href: '/admin/subscriptions', label: 'Abonelik Yönetimi', icon: CreditCard },
         { href: '/admin/gallery', label: 'Ortak Görsel Galerisi', icon: Palette },
+        { href: '/admin/settings', label: 'Sistem Ayarları', icon: SlidersHorizontal },
       ]
     : [
         { href: '/dashboard', label: 'Özet Panel', icon: LayoutDashboard },
@@ -110,7 +112,7 @@ export default function DashboardLayout({
         <div className="absolute w-[350px] h-[350px] bg-purple-500/5 rounded-full blur-3xl bottom-1/4 right-1/4 pointer-events-none -z-10" />
         
         <div className="flex flex-col items-center gap-4 animate-pulse">
-          <div className="w-12 h-12 rounded-xl bg-indigo-650/10 border border-indigo-500/25 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-indigo-600/10 border border-indigo-500/25 flex items-center justify-center">
             <QrCode className="w-6 h-6 text-indigo-600 animate-spin [animation-duration:3s]" />
           </div>
           <span className="text-xs text-stone-500 font-bold tracking-widest uppercase mt-2">

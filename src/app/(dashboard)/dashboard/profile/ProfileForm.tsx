@@ -178,7 +178,7 @@ export default function ProfileForm({ business }: ProfileFormProps) {
                 <img src={currentValue} alt="Preview" className="w-12 h-12 rounded-xl object-cover border border-stone-200" />
               ) : (
                 <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                  <Video className="w-6 h-6 text-indigo-650" />
+                  <Video className="w-6 h-6 text-indigo-600" />
                 </div>
               )}
               <div className="flex flex-col overflow-hidden">
@@ -217,7 +217,7 @@ export default function ProfileForm({ business }: ProfileFormProps) {
               className="hidden"
             />
             {uploading ? (
-              <Loader2 className="w-8 h-8 text-indigo-650 animate-spin" />
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
             ) : (
               <UploadCloud className="w-8 h-8 text-black" />
             )}
@@ -235,7 +235,7 @@ export default function ProfileForm({ business }: ProfileFormProps) {
     <form onSubmit={handleSubmit} className="w-full max-w-3xl text-black">
       
       {/* Main card in clean premium light mode style */}
-      <div className="bg-white rounded-3xl border border-stone-200 p-8 shadow-xl shadow-stone-100 flex flex-col gap-6 text-black">
+      <div className="bg-white rounded-3xl border border-stone-200 p-5 sm:p-8 shadow-xl shadow-stone-100 flex flex-col gap-6 text-black">
         
         <div>
           <h3 className="text-base font-black text-black border-b border-stone-150 pb-3">İşletme Temel Bilgileri</h3>
@@ -339,7 +339,7 @@ export default function ProfileForm({ business }: ProfileFormProps) {
               onChange={(e) => setShowCalories(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-650"></div>
+            <div className="w-9 h-5 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
           </label>
         </div>
 
@@ -359,7 +359,7 @@ export default function ProfileForm({ business }: ProfileFormProps) {
               onChange={(e) => setAllowOrders(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-9 h-5 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-650"></div>
+            <div className="w-9 h-5 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
           </label>
         </div>
 
@@ -460,7 +460,7 @@ export default function ProfileForm({ business }: ProfileFormProps) {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-3.5 rounded-xl bg-indigo-650 hover:bg-indigo-600 text-white text-xs font-black tracking-wide transition-all flex items-center gap-2 shadow-lg shadow-indigo-650/15 active:scale-98 disabled:opacity-50"
+            className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-600 text-white text-xs font-black tracking-wide transition-all flex items-center gap-2 shadow-lg shadow-indigo-600/15 active:scale-98 disabled:opacity-50"
           >
             <Save className="w-4.5 h-4.5" />
             {loading ? 'Kaydediliyor...' : 'AYARLARI KAYDET'}
