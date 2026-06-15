@@ -83,10 +83,6 @@ type CartItem = {
 // ─── Category image resolver ──────────────────────────────────────────────────
 
 const CATEGORY_FALLBACKS: Record<string, string> = {
-  kahve: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&auto=format&fit=crop&q=75',
-  coffee: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&auto=format&fit=crop&q=75',
-  burger: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=75',
-  pizza: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&auto=format&fit=crop&q=75',
   salata: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop&q=75',
   salad: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&auto=format&fit=crop&q=75',
   tatli: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=600&auto=format&fit=crop&q=75',
@@ -101,7 +97,24 @@ const CATEGORY_FALLBACKS: Record<string, string> = {
   seafood: 'https://images.unsplash.com/photo-1615141982883-c7ad0e69fd62?w=600&auto=format&fit=crop&q=75',
 };
 
-function getCategoryImage(cat: CategoryType): string | null {
+const THEME_PLACEHOLDERS: Record<string, string> = {
+  'modern-cafe': 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&auto=format&fit=crop&q=75',
+  'premium-restaurant': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&auto=format&fit=crop&q=75',
+  'fast-food': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=600&auto=format&fit=crop&q=75',
+  'minimal': 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600&auto=format&fit=crop&q=75',
+  'dark-mode': 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=600&auto=format&fit=crop&q=75',
+  'luxury-gold': 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=600&auto=format&fit=crop&q=75',
+  'coffee-house': 'https://images.unsplash.com/photo-1498804103079-a6351b050096?w=600&auto=format&fit=crop&q=75',
+  'street-food': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&auto=format&fit=crop&q=75',
+  'fine-dining': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=75',
+  'neon-style': 'https://images.unsplash.com/photo-1563245372-f21724e3856d?w=600&auto=format&fit=crop&q=75',
+  'sef-klasik': 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=600&auto=format&fit=crop&q=75',
+  'premium-3d-gourmet': 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&auto=format&fit=crop&q=75',
+  'premium-cyber-bistro': 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?w=600&auto=format&fit=crop&q=75',
+  'premium-retro-news': 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&auto=format&fit=crop&q=75',
+};
+
+function getCategoryImage(cat: CategoryType, themeId: string = 'modern-cafe'): string {
   if (cat.categoryImageUrl) return cat.categoryImageUrl;
   const firstWithImage = cat.products.find((p) => p.isActive && p.imageUrl);
   if (firstWithImage?.imageUrl) return firstWithImage.imageUrl;
@@ -109,7 +122,7 @@ function getCategoryImage(cat: CategoryType): string | null {
   for (const [key, url] of Object.entries(CATEGORY_FALLBACKS)) {
     if (nameLower.includes(key)) return url;
   }
-  return null;
+  return THEME_PLACEHOLDERS[themeId] || THEME_PLACEHOLDERS['modern-cafe'];
 }
 
 // ─── Premium Logo / Monogram ──────────────────────────────────────────────────
@@ -180,7 +193,7 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
         </p>
         <div className="grid grid-cols-2 gap-3.5">
           {categories.map((cat) => {
-            const img = getCategoryImage(cat);
+            const img = getCategoryImage(cat, theme.id);
             return (
               <button
                 key={cat.id}
@@ -221,7 +234,7 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
           </h2>
         </div>
         {categories.map((cat) => {
-          const img = getCategoryImage(cat);
+          const img = getCategoryImage(cat, theme.id);
           return (
             <button
               key={cat.id}
@@ -265,7 +278,7 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
         </p>
         {categories.length > 0 && (() => {
           const cat = categories[0];
-          const img = getCategoryImage(cat);
+          const img = getCategoryImage(cat, theme.id);
           return (
             <button
               key={cat.id}
@@ -287,7 +300,7 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
         })()}
         <div className="grid grid-cols-2 gap-3">
           {categories.slice(1).map((cat) => {
-            const img = getCategoryImage(cat);
+            const img = getCategoryImage(cat, theme.id);
             return (
               <button
                 key={cat.id}
@@ -321,7 +334,7 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
         </p>
         <div className="grid grid-cols-2 gap-2">
           {categories.map((cat, i) => {
-            const img = getCategoryImage(cat);
+            const img = getCategoryImage(cat, theme.id);
             const isTall = i % 3 === 0;
             return (
               <button
@@ -359,7 +372,7 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
           <div className={`mx-auto w-12 h-px ${isDark ? 'bg-amber-500/50' : 'bg-stone-400/40'}`} />
         </div>
         {categories.map((cat) => {
-          const img = getCategoryImage(cat);
+          const img = getCategoryImage(cat, theme.id);
           return (
             <button
               key={cat.id}
