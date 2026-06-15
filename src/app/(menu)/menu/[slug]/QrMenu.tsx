@@ -754,7 +754,7 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
 
   // ── Main menu ─────────────────────────────────────────────────────────────
   return (
-    <div className={`min-h-screen ${theme.bgMain} ${theme.fontBody} pb-32 relative max-w-md mx-auto shadow-2xl border-x border-current/5`}>
+    <div className={`min-h-screen ${theme.bgMain} ${theme.fontBody} pb-32 relative w-full max-w-md mx-auto shadow-2xl border-x border-current/5`}>
 
       {/* Gold reveal curtain — wipes up to open the menu (Şef Klasik) */}
       {isSefKlasik && <div className="menu-reveal-curtain" />}
