@@ -12,6 +12,7 @@ import {
   X,
   MessageSquare,
   ChevronRight,
+  ChevronLeft,
   UtensilsCrossed,
   Sparkles,
   MapPin,
@@ -177,14 +178,14 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
         <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-zinc-500' : 'text-stone-400'}`}>
           Kategoriler
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3.5">
           {categories.map((cat) => {
             const img = getCategoryImage(cat);
             return (
               <button
                 key={cat.id}
                 onClick={() => onScrollToCategory(cat.id)}
-                className="relative rounded-2xl overflow-hidden h-32 cursor-pointer group"
+                className="relative rounded-[20px] overflow-hidden aspect-square cursor-pointer group"
               >
                 {img ? (
                   <img
@@ -196,10 +197,10 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
                 ) : (
                   <div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-stone-100'}`} />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-3 text-left">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-3 text-center">
                   <p className="text-white font-bold text-sm leading-tight">{cat.name}</p>
-                  <p className="text-white/60 text-[10px] font-medium mt-0.5">{cat.products.filter(p=>p.isActive).length} ürün</p>
+                  <p className="text-white/70 text-[10px] font-medium mt-0.5">{cat.products.filter(p=>p.isActive).length} ürün</p>
                 </div>
               </button>
             );
@@ -417,6 +418,7 @@ function SplashScreen({ business, theme, leaving, onEnter }: SplashProps) {
     'premium-3d-gourmet':   'opacity-0 scale-[0.96] duration-400',
     'premium-cyber-bistro': 'opacity-0 -translate-x-4 duration-300',
     'premium-retro-news':   'opacity-0 scale-[0.97] duration-400',
+    'sef-klasik':           'opacity-0 duration-300',
   };
 
   const exitAnim = leaving ? (exitMap[theme.id] || 'opacity-0 scale-[0.96]') : 'opacity-100 scale-100';
@@ -499,11 +501,17 @@ function SplashScreen({ business, theme, leaving, onEnter }: SplashProps) {
           )}
         </div>
 
-        {/* Center Section: Big circular double-ring CTA button */}
-        <div className="flex-1 flex items-center justify-center my-8">
+        {/* Center Section: Big circular double-ring CTA button with pulsing rings */}
+        <div className="relative flex-1 flex items-center justify-center my-8">
+          {/* Soft glow behind button */}
+          <span className="pointer-events-none absolute w-44 h-44 rounded-full bg-[radial-gradient(circle,rgba(212,165,116,0.35)_0%,transparent_70%)] blur-md animate-[ctaGlow_3.5s_ease-in-out_infinite]" />
+          {/* Expanding ripple rings (staggered) */}
+          <span className="pointer-events-none absolute w-36 h-36 rounded-full border-2 border-[#d4a574]/70 animate-[menuRipple_3s_ease-out_infinite]" />
+          <span className="pointer-events-none absolute w-36 h-36 rounded-full border-2 border-[#d4a574]/70 animate-[menuRipple_3s_ease-out_infinite] [animation-delay:1s]" />
+          <span className="pointer-events-none absolute w-36 h-36 rounded-full border-2 border-[#d4a574]/70 animate-[menuRipple_3s_ease-out_infinite] [animation-delay:2s]" />
           <button
             onClick={onEnter}
-            className="w-36 h-36 rounded-full border border-amber-500/20 flex items-center justify-center p-2 group hover:border-amber-400/40 transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_35px_rgba(245,158,11,0.06)] bg-transparent"
+            className="relative z-10 w-36 h-36 rounded-full border border-amber-500/20 flex items-center justify-center p-2 group hover:border-amber-400/40 transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_35px_rgba(245,158,11,0.06)] bg-transparent"
           >
             <div className="w-full h-full rounded-full bg-[#dfba88] text-stone-900 group-hover:bg-[#ebd0ab] transition-colors flex flex-col items-center justify-center gap-1.5 shadow-2xl border border-amber-300/30">
               <BookOpen className="w-6.5 h-6.5 text-stone-900" />
@@ -607,11 +615,15 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
 
   const theme = useMemo(() => getThemeById(business.themeId), [business.themeId]);
 
+  // "Şef Klasik" theme uses a compact reference-style header instead of the big hero
+  const isSefKlasik = theme.id === 'sef-klasik';
+
   const isCategoryLandingFullScreen = useMemo(() => [
     'premium-restaurant',
     'luxury-gold',
     'fine-dining',
-    'coffee-house'
+    'coffee-house',
+    'sef-klasik'
   ].includes(theme.id), [theme.id]);
 
   const [viewMode, setViewMode] = useState<'categories' | 'menu'>(
@@ -655,8 +667,9 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
   // Dismiss splash
   const handleEnterMenu = useCallback(() => {
     setSplashLeaving(true);
-    setTimeout(() => setSplashDismissed(true), 500);
-  }, []);
+    // Şef Klasik hands off quickly to the gold reveal curtain on the menu
+    setTimeout(() => setSplashDismissed(true), isSefKlasik ? 260 : 500);
+  }, [isSefKlasik]);
 
   // Cart ops
   const addToCart = (product: ProductType, e?: React.MouseEvent) => {
@@ -743,12 +756,32 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
   return (
     <div className={`min-h-screen ${theme.bgMain} ${theme.fontBody} pb-32 relative max-w-md mx-auto shadow-2xl border-x border-current/5`}>
 
+      {/* Gold reveal curtain — wipes up to open the menu (Şef Klasik) */}
+      {isSefKlasik && <div className="menu-reveal-curtain" />}
+
       {/* Glow strip (Neon theme) */}
       {theme.hasGlow && (
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-fuchsia-500 via-purple-600 to-cyan-500 animate-pulse shadow-[0_0_15px_rgba(217,70,239,0.5)] z-20" />
       )}
 
-      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+      {/* ── COMPACT HEADER (Şef Klasik) ───────────────────────────────────── */}
+      {isSefKlasik && (
+        <div className="sticky top-0 z-30 h-14 px-3 flex items-center justify-center bg-[#faf9f7]/85 backdrop-blur-md border-b border-stone-200/70">
+          <button
+            onClick={() => { setSplashLeaving(false); setSplashDismissed(false); }}
+            className="absolute left-3 w-9 h-9 rounded-lg border border-stone-200 bg-white flex items-center justify-center text-stone-700 hover:bg-stone-50 active:scale-95 transition-all"
+            aria-label="Geri"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className={`${theme.fontHeader} text-base font-semibold tracking-wide text-stone-900`}>
+            {business.name}
+          </h1>
+        </div>
+      )}
+
+      {/* ── HEADER (hero — other themes) ────────────────────────────────────── */}
+      {!isSefKlasik && (
       <div className={`relative pt-12 pb-6 px-6 bg-gradient-to-b ${visualTheme.heroGradient} overflow-hidden`}>
         <div className="absolute w-44 h-44 rounded-full bg-indigo-500/8 blur-3xl -top-10 -left-10 pointer-events-none" />
         <div className="flex flex-col items-center text-center">
@@ -787,6 +820,7 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
           </div>
         </div>
       </div>
+      )}
 
       {/* ── CATEGORY VISUAL NAVIGATION ─────────────────────────────────────── */}
       {showCategoryNav && activeCategories.length > 0 && (!isCategoryLandingFullScreen || viewMode === 'categories') && (
@@ -869,10 +903,10 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
                         <div
                           key={prod.id}
                           onClick={() => setSelectedProduct(prod)}
-                          className={`group p-3 rounded-2xl ${theme.bgCard} ${theme.borderColor} cursor-pointer flex gap-4 items-center hover:scale-[1.01] active:scale-[0.99] transition-all duration-250 relative border`}
+                          className={`group rounded-2xl ${theme.bgCard} ${theme.borderColor} cursor-pointer transition-all duration-250 relative border ${isSefKlasik ? 'flex items-stretch overflow-hidden min-h-[110px]' : 'p-3 flex gap-4 items-center hover:scale-[1.01] active:scale-[0.99]'}`}
                         >
                           {/* Product image */}
-                          <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-current/5 border border-current/5 relative">
+                          <div className={`overflow-hidden shrink-0 bg-current/5 relative ${isSefKlasik ? 'w-[100px] self-stretch' : 'w-20 h-20 rounded-xl border border-current/5'}`}>
                             {prod.imageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -892,7 +926,7 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
                           </div>
 
                           {/* Info */}
-                          <div className="flex-1 min-w-0">
+                          <div className={`flex-1 min-w-0 ${isSefKlasik ? 'p-3 flex flex-col' : ''}`}>
                             <h3 className={`font-black text-sm text-current truncate`}>{prod.name}</h3>
                             {prod.description && (
                               <p className={`text-[10px] ${visualTheme.subTextColor} leading-normal line-clamp-2 mt-0.5 font-light`}>
@@ -911,7 +945,7 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
 
                           {/* AllowOrders Quick Add button */}
                           {business.allowOrders && (
-                            <div className="pl-1 shrink-0 z-10">
+                            <div className={`shrink-0 z-10 self-center ${isSefKlasik ? 'pr-3' : 'pl-1'}`}>
                               {qty > 0 ? (
                                 <div className="flex items-center gap-1.5 bg-current/5 rounded-xl border border-current/10 p-0.5" onClick={(e) => e.stopPropagation()}>
                                   <button

@@ -18,7 +18,8 @@ import {
   Palette,
   Users,
   Building2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  BadgeCheck
 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
@@ -64,6 +65,7 @@ export default function DashboardLayout({
   const navLinks = userRole === 'SUPER_ADMIN'
     ? [
         { href: '/admin', label: 'Genel Özet', icon: LayoutDashboard },
+        { href: '/admin/approvals', label: 'Onay Bekleyenler', icon: BadgeCheck },
         { href: '/admin/users', label: 'Kullanıcı Yönetimi', icon: Users },
         { href: '/admin/businesses', label: 'İşletme Yönetimi', icon: Building2 },
         { href: '/admin/subscriptions', label: 'Abonelik Yönetimi', icon: CreditCard },

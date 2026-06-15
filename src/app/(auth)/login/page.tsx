@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { QrCode, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
@@ -46,7 +46,10 @@ function LoginContent() {
           document.cookie = `session_active=true; path=/; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
         }
         showToast('Başarıyla giriş yapıldı. Yönlendiriliyorsunuz...', 'success');
-        router.push('/dashboard');
+        // Route by role so Super Admins land on /admin directly (no dashboard bounce)
+        const activeSession = await getSession();
+        const role = (activeSession?.user as any)?.role;
+        router.push(role === 'SUPER_ADMIN' ? '/admin' : '/dashboard');
         router.refresh();
       }
     } catch (err) {

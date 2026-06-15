@@ -2,14 +2,19 @@
 
 import React, { useState } from 'react';
 import { useToast } from '@/components/ToastProvider';
-import { deleteUser, updateUserRole } from '@/app/actions/admin';
-import { 
-  Search, 
-  Trash2, 
-  Shield, 
-  User, 
+import { deleteUser, updateUserRole, updateUserPassword } from '@/app/actions/admin';
+import {
+  Search,
+  Trash2,
+  Shield,
+  User,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  KeyRound,
+  Eye,
+  EyeOff,
+  X,
+  Save
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -39,6 +44,31 @@ export default function UserTable({ initialUsers }: UserTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | 'SUPER_ADMIN' | 'BUSINESS_OWNER'>('ALL');
   const [loading, setLoading] = useState<string | null>(null); // tracks user id currently executing operation
+
+  // Password change modal state
+  const [pwUser, setPwUser] = useState<UserWithBusiness | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!pwUser) return;
+    if (newPassword.length < 6) {
+      showToast('Şifre en az 6 karakter olmalıdır.', 'error');
+      return;
+    }
+    setPwLoading(true);
+    const res = await updateUserPassword(pwUser.id, newPassword);
+    if (res.success) {
+      showToast(`${pwUser.name} için yeni şifre kaydedildi.`, 'success');
+      setPwUser(null);
+      setNewPassword('');
+      setShowPw(false);
+    } else {
+      showToast(res.error || 'Şifre güncellenemedi.', 'error');
+    }
+    setPwLoading(false);
+  };
 
   const handleRoleChange = async (userId: string, currentRole: string) => {
     const nextRole = currentRole === 'SUPER_ADMIN' ? 'BUSINESS_OWNER' : 'SUPER_ADMIN';
@@ -234,6 +264,13 @@ export default function UserTable({ initialUsers }: UserTableProps) {
                           </a>
                         )}
                         <button
+                          onClick={() => { setPwUser(user); setNewPassword(''); setShowPw(false); }}
+                          className="p-1.5 rounded-lg bg-stone-50 border border-stone-200 text-stone-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-colors"
+                          title="Şifre Değiştir"
+                        >
+                          <KeyRound className="w-4 h-4" />
+                        </button>
+                        <button
                           disabled={isOpLoading}
                           onClick={() => handleDelete(user.id, user.name)}
                           className="p-1.5 rounded-lg bg-stone-50 border border-stone-200 text-stone-600 hover:text-red-650 hover:bg-red-50 hover:border-red-100 transition-colors disabled:opacity-50"
@@ -296,6 +333,13 @@ export default function UserTable({ initialUsers }: UserTableProps) {
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
+                    <button
+                      onClick={() => { setPwUser(user); setNewPassword(''); setShowPw(false); }}
+                      className="p-2 rounded-lg bg-stone-50 border border-stone-200 text-stone-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-colors"
+                      title="Şifre Değiştir"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                    </button>
                     <button
                       disabled={isOpLoading}
                       onClick={() => handleDelete(user.id, user.name)}
@@ -366,6 +410,56 @@ export default function UserTable({ initialUsers }: UserTableProps) {
           </div>
         )}
       </div>
+
+      {/* Password change modal */}
+      {pwUser && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white border border-stone-200 rounded-3xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-stone-150 pb-3 mb-5">
+              <h4 className="text-sm font-black text-black flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-indigo-600" />
+                Şifre Değiştir
+              </h4>
+              <button onClick={() => setPwUser(null)} className="text-stone-500 hover:text-black">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-500 font-medium mb-4">
+              <strong className="text-black font-extrabold">{pwUser.name}</strong> ({pwUser.email}) için yeni bir şifre belirleyin. Eski şifre geri getirilemez.
+            </p>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-black">Yeni Şifre</label>
+              <div className="relative">
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="En az 6 karakter"
+                  className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white text-sm outline-none text-black font-semibold"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700"
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={handleChangePassword}
+              disabled={pwLoading}
+              className="w-full mt-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 shadow-md"
+            >
+              <Save className="w-4 h-4" />
+              {pwLoading ? 'Kaydediliyor...' : 'Yeni Şifreyi Kaydet'}
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

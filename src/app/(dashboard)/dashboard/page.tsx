@@ -272,7 +272,7 @@ export default async function DashboardPage() {
               </div>
               <div className="w-full h-2 rounded bg-stone-100 overflow-hidden">
                 <div 
-                  className="h-full bg-purple-650 rounded transition-all duration-500" 
+                  className="h-full bg-purple-600 rounded transition-all duration-500"
                   style={{ width: `${Math.min((totalProducts / planDetails.limits.maxProducts) * 100, 100)}%` }}
                 />
               </div>

@@ -1,5 +1,6 @@
 'use server';
 
+import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
@@ -93,10 +94,46 @@ export async function updateBusinessSubscription(businessId: string, newPlanId: 
     revalidatePath('/admin/users');
     revalidatePath('/admin/businesses');
     revalidatePath('/admin/subscriptions');
+    revalidatePath('/admin/approvals');
     return { success: true, error: null };
   } catch (error) {
     console.error(error);
     return { success: false, error: 'Abonelik güncellenemedi.' };
+  }
+}
+
+/**
+ * Marks a pending business subscription as ACTIVE (admin approval) with the
+ * chosen plan. Reuses the same upsert behaviour as updateBusinessSubscription.
+ */
+export async function approveBusiness(businessId: string, planId: string) {
+  const isAdmin = await verifyAdminRole();
+  if (!isAdmin) return { success: false, error: 'Yetkisiz erişim.' };
+
+  try {
+    await prisma.subscription.upsert({
+      where: { businessId },
+      update: {
+        planId,
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      },
+      create: {
+        businessId,
+        planId,
+        status: 'ACTIVE',
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    revalidatePath('/admin');
+    revalidatePath('/admin/approvals');
+    revalidatePath('/admin/businesses');
+    revalidatePath('/admin/subscriptions');
+    return { success: true, error: null };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Onaylama sırasında hata oluştu.' };
   }
 }
 
@@ -179,6 +216,31 @@ export async function deleteUser(userId: string) {
   } catch (error) {
     console.error(error);
     return { success: false, error: 'Kullanıcı silinemedi.' };
+  }
+}
+
+/**
+ * Resets/changes a user's password (Super Admin only).
+ * Stores a new bcrypt hash — plaintext is never persisted or retrievable.
+ */
+export async function updateUserPassword(userId: string, newPassword: string) {
+  const isAdmin = await verifyAdminRole();
+  if (!isAdmin) return { success: false, error: 'Yetkisiz erişim.' };
+
+  if (!newPassword || newPassword.length < 6) {
+    return { success: false, error: 'Şifre en az 6 karakter olmalıdır.' };
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    return { success: true, error: null };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: 'Şifre güncellenemedi.' };
   }
 }
 

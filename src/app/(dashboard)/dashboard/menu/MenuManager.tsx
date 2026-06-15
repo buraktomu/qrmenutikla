@@ -464,7 +464,7 @@ export default function MenuManager({
             </div>
             <button
               onClick={() => handleOpenProdModal(null)}
-              className="px-3.5 py-2 rounded-xl bg-indigo-655 hover:bg-indigo-600 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm shrink-0"
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all active:scale-98 shadow-sm shrink-0"
             >
               <Plus className="w-4 h-4" />
               Ürün Ekle
@@ -555,9 +555,16 @@ export default function MenuManager({
         <div className="p-16 text-center rounded-2xl border border-dashed border-stone-300 text-black text-sm font-semibold flex flex-col items-center gap-4">
           <div className="w-12 h-12 text-black flex items-center justify-center">🍽️</div>
           <div>
-            <h3 className="font-extrabold text-black text-base">Henüz Kategori Oluşturulmadı</h3>
-            <p className="text-xs text-black font-medium mt-1 max-w-xs mx-auto">Sipariş menünüzü kategorize etmek için yukarıdaki &quot;Kategori Ekle&quot; düğmesiyle başlayın.</p>
+            <h3 className="font-extrabold text-black text-base">Önce bir kategori oluşturun</h3>
+            <p className="text-xs text-black font-medium mt-1 max-w-xs mx-auto">Ürün ekleyebilmek için önce bir kategori (örn. Kahveler, Burgerler) gerekir. Kategoriyi oluşturunca &quot;Ürün Ekle&quot; düğmesi görünecektir.</p>
           </div>
+          <button
+            onClick={() => handleOpenCatModal(null)}
+            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-2 transition-all active:scale-98 shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            İlk Kategoriyi Ekle
+          </button>
         </div>
       )}
 

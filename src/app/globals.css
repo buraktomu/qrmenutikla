@@ -90,6 +90,43 @@ body {
   scrollbar-width: none;  /* Firefox */
 }
 
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Splash CTA expanding ripple rings (reference style) */
+@keyframes menuRipple {
+  0%   { transform: scale(1);   opacity: 0.5; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* Soft glow pulse behind the CTA */
+@keyframes ctaGlow {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50%      { opacity: 0.7;  transform: scale(1.12); }
+}
+
+/* Gold curtain that wipes upward to reveal the menu (reference page-reveal) */
+@keyframes menuRevealUp {
+  0%   { transform: scaleY(1); }
+  100% { transform: scaleY(0); }
+}
+
+.menu-reveal-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: linear-gradient(135deg, #b8834a 0%, #d4a574 60%, #e8c9a0 100%);
+  transform-origin: center top;
+  animation: menuRevealUp 0.6s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+  pointer-events: none;
+}
+
 @keyframes slide-up {
   from {
     transform: translateY(100%);
