@@ -39,9 +39,10 @@ export default async function ProfilePage() {
   const activePlanId = business.subscription?.planId || 'starter';
   const hasThemeSelectionLimit = activePlanId === 'starter';
 
-  // Decrypt and mask the merchant's key
-  const decryptedKey = business.customOpenAiKey ? decrypt(business.customOpenAiKey) : '';
+  // Safe fallbacks for customOpenAiKey and useOwnApiKey
+  const decryptedKey = (business as any).customOpenAiKey ? decrypt((business as any).customOpenAiKey) : '';
   const maskedKey = decryptedKey ? maskApiKey(decryptedKey) : '';
+  const useOwnApiKey = (business as any).useOwnApiKey ?? false;
 
   return (
     <div className="flex flex-col gap-6 text-black">
@@ -73,7 +74,7 @@ export default async function ProfilePage() {
           instagramUrl: business.instagramUrl,
           locationUrl: business.locationUrl,
           reviewsUrl: business.reviewsUrl,
-          useOwnApiKey: business.useOwnApiKey,
+          useOwnApiKey: useOwnApiKey,
           customOpenAiKey: maskedKey,
         }}
         hasThemeSelectionLimit={hasThemeSelectionLimit}
