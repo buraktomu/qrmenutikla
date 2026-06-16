@@ -64,6 +64,68 @@ type MenuManagerProps = {
   hasWhatsApp: boolean;
 };
 
+function isVideoUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase().split('?')[0];
+  return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+}
+
+function MediaDisplay({
+  src,
+  alt,
+  className,
+  loading = 'lazy',
+  autoPlay = false,
+  loop = false,
+  controls = true,
+  fallback,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  loading?: 'lazy' | 'eager';
+  autoPlay?: boolean;
+  loop?: boolean;
+  controls?: boolean;
+  fallback?: React.ReactNode;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  React.useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  if (!src || hasError) {
+    return fallback ? <>{fallback}</> : null;
+  }
+
+  if (isVideoUrl(src)) {
+    return (
+      <video
+        src={src}
+        className={className}
+        controls={controls}
+        autoPlay={autoPlay}
+        loop={loop}
+        muted
+        playsInline
+        preload="metadata"
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading={loading}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 export default function MenuManager({ 
   businessId, 
   initialCategories, 
@@ -481,8 +543,15 @@ export default function MenuManager({
                   {/* Image */}
                   <div className="w-16 h-16 rounded-xl bg-stone-50 border border-stone-200 overflow-hidden shrink-0 flex items-center justify-center relative">
                     {prod.imageUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={prod.imageUrl} alt={prod.name} className="w-full h-full object-cover" />
+                      <MediaDisplay
+                        src={prod.imageUrl}
+                        alt={prod.name}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        controls={false}
+                        fallback={<ImageIcon className="w-6 h-6 text-stone-300" />}
+                      />
                     ) : (
                       <ImageIcon className="w-6 h-6 text-stone-300" />
                     )}
@@ -606,7 +675,7 @@ export default function MenuManager({
                 >
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     ref={catImageInputRef}
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCatImageSelect(f); }}
                     className="hidden"
@@ -617,12 +686,11 @@ export default function MenuManager({
                     <UploadCloud className="w-7 h-7 text-stone-400" />
                   )}
                   <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
-                  <span className="text-[10px] text-stone-400 font-bold">Boş bırakırsanız ilk ürün görseli kullanılır</span>
+                  <span className="text-[10px] text-stone-400 font-bold">Resim (maks 2MB) veya Video (maks 50MB) yükleyebilirsiniz</span>
                 </div>
                 {catImageUrlInput && (
                   <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200 mt-1">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={catImageUrlInput} alt="Önizleme" className="w-full h-full object-cover" />
+                    <MediaDisplay src={catImageUrlInput} alt="Önizleme" className="w-full h-full object-cover" controls autoPlay={false} loop={false} />
                     <button
                       type="button"
                       onClick={() => setCatImageUrlInput('')}
@@ -748,7 +816,7 @@ export default function MenuManager({
                     >
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/*"
                         ref={prodImageInputRef}
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleProdImageSelect(f); }}
                         className="hidden"
@@ -759,12 +827,11 @@ export default function MenuManager({
                         <UploadCloud className="w-7 h-7 text-stone-400" />
                       )}
                       <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
-                      <span className="text-[10px] text-stone-400 font-bold">PNG, JPG · telefonda kameradan da çekebilirsiniz</span>
+                      <span className="text-[10px] text-stone-400 font-bold">Görsel (maks 2MB) veya Video (maks 50MB) yükleyebilirsiniz</span>
                     </div>
                     {pImageUrl && (
                       <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={pImageUrl} alt="Önizleme" className="w-full h-full object-cover" />
+                        <MediaDisplay src={pImageUrl} alt="Önizleme" className="w-full h-full object-cover" controls autoPlay={false} loop={false} />
                         <button
                           type="button"
                           onClick={() => setPImageUrl('')}

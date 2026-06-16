@@ -125,6 +125,68 @@ function getCategoryImage(cat: CategoryType, themeId: string = 'modern-cafe'): s
   return THEME_PLACEHOLDERS[themeId] || THEME_PLACEHOLDERS['modern-cafe'];
 }
 
+function isVideoUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase().split('?')[0];
+  return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+}
+
+function MediaDisplay({
+  src,
+  alt,
+  className,
+  loading = 'lazy',
+  autoPlay = false,
+  loop = false,
+  controls = true,
+  fallback,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  loading?: 'lazy' | 'eager';
+  autoPlay?: boolean;
+  loop?: boolean;
+  controls?: boolean;
+  fallback?: React.ReactNode;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  if (!src || hasError) {
+    return fallback ? <>{fallback}</> : null;
+  }
+
+  if (isVideoUrl(src)) {
+    return (
+      <video
+        src={src}
+        className={className}
+        controls={controls}
+        autoPlay={autoPlay}
+        loop={loop}
+        muted
+        playsInline
+        preload="metadata"
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading={loading}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 // ─── Premium Logo / Monogram ──────────────────────────────────────────────────
 
 function BusinessLogoOrMonogram({
@@ -147,11 +209,13 @@ function BusinessLogoOrMonogram({
 
   if (logoUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <MediaDisplay
         src={logoUrl}
         alt={name}
         className={`${sizeMap[size]} rounded-full object-cover`}
+        autoPlay
+        loop
+        controls={false}
       />
     );
   }
@@ -201,11 +265,14 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
                 className="relative rounded-[20px] overflow-hidden aspect-square cursor-pointer group"
               >
                 {img ? (
-                  <img
+                  <MediaDisplay
                     src={img}
                     alt={cat.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
+                    autoPlay
+                    loop
+                    controls={false}
+                    fallback={<div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-stone-100'}`} />}
                   />
                 ) : (
                   <div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-stone-100'}`} />
@@ -242,11 +309,14 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
               className="relative rounded-xl overflow-hidden h-36 w-full cursor-pointer group"
             >
               {img ? (
-                <img
+                <MediaDisplay
                   src={img}
                   alt={cat.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
+                  autoPlay
+                  loop
+                  controls={false}
+                  fallback={<div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-stone-100'}`} />}
                 />
               ) : (
                 <div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-stone-100'}`} />
@@ -286,7 +356,15 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
               className="relative w-full rounded-2xl overflow-hidden h-44 mb-3 cursor-pointer group"
             >
               {img ? (
-                <img src={img} alt={cat.name} className="w-full h-full object-cover transition-transform duration-600 group-hover:scale-105" loading="lazy" />
+                <MediaDisplay
+                  src={img}
+                  alt={cat.name}
+                  className="w-full h-full object-cover transition-transform duration-600 group-hover:scale-105"
+                  autoPlay
+                  loop
+                  controls={false}
+                  fallback={<div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-amber-100'}`} />}
+                />
               ) : (
                 <div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-amber-100'}`} />
               )}
@@ -308,7 +386,15 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
                 className="relative rounded-xl overflow-hidden h-28 cursor-pointer group"
               >
                 {img ? (
-                  <img src={img} alt={cat.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108" loading="lazy" />
+                  <MediaDisplay
+                    src={img}
+                    alt={cat.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
+                    autoPlay
+                    loop
+                    controls={false}
+                    fallback={<div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-amber-55'}`} />}
+                  />
                 ) : (
                   <div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-amber-50'}`} />
                 )}
@@ -343,7 +429,15 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
                 className={`relative rounded-xl overflow-hidden cursor-pointer group ${isTall ? 'h-44' : 'h-28'}`}
               >
                 {img ? (
-                  <img src={img} alt={cat.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                  <MediaDisplay
+                    src={img}
+                    alt={cat.name}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    autoPlay
+                    loop
+                    controls={false}
+                    fallback={<div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-stone-200'}`} />}
+                  />
                 ) : (
                   <div className={`w-full h-full ${isDark ? 'bg-zinc-800' : 'bg-stone-200'}`} />
                 )}
@@ -380,7 +474,15 @@ function CategoryNavCards({ categories, theme, categoryView, onScrollToCategory 
               className="relative w-full h-40 overflow-hidden cursor-pointer group"
             >
               {img ? (
-                <img src={img} alt={cat.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-75" loading="lazy" />
+                <MediaDisplay
+                  src={img}
+                  alt={cat.name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-75"
+                  autoPlay
+                  loop
+                  controls={false}
+                  fallback={<div className={`w-full h-full ${isDark ? 'bg-zinc-900' : 'bg-stone-200'}`} />}
+                />
               ) : (
                 <div className={`w-full h-full ${isDark ? 'bg-zinc-900' : 'bg-stone-200'}`} />
               )}
@@ -921,12 +1023,14 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
                           {/* Product image */}
                           <div className={`overflow-hidden shrink-0 bg-current/5 relative ${isSefKlasik ? 'w-[100px] self-stretch' : 'w-20 h-20 rounded-xl border border-current/5'}`}>
                             {prod.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
+                              <MediaDisplay
                                 src={prod.imageUrl}
                                 alt={prod.name}
                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                loading="lazy"
+                                autoPlay
+                                loop
+                                controls={false}
+                                fallback={<div className="w-full h-full flex items-center justify-center opacity-30 text-lg">🍔</div>}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center opacity-30 text-lg">🍔</div>
@@ -1052,8 +1156,19 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
 
             {selectedProduct.imageUrl ? (
               <div className="w-full h-52 rounded-2xl overflow-hidden border border-current/5 mb-5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" loading="lazy" />
+                <MediaDisplay
+                  src={selectedProduct.imageUrl}
+                  alt={selectedProduct.name}
+                  className="w-full h-full object-cover"
+                  controls
+                  autoPlay={false}
+                  loop={false}
+                  fallback={
+                    <div className="w-full h-full flex items-center justify-center opacity-25">
+                      <UtensilsCrossed className="w-10 h-10" />
+                    </div>
+                  }
+                />
               </div>
             ) : (
               <div className="w-full h-28 rounded-2xl bg-current/5 border border-current/5 mb-5 flex items-center justify-center opacity-25">

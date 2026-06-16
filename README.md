@@ -134,3 +134,29 @@ Eğer kendinize ait bir sanal sunucu (VPS) kullanıyorsanız:
    pm2 start npm --name "qr-menu-saas" -- start
    ```
 4. VPS önünde **Nginx** ters proxy yapılandırması kurarak port yönlendirmesi ve SSL sertifikası (Let's Encrypt) işlemlerini tamamlayın.
+5. Görsel ve video yüklemelerinin (/uploads/ dizini) doğrudan Nginx tarafından hızlı servis edilmesi için aşağıdaki Nginx yapılandırmasını ekleyin:
+   ```nginx
+   # Uploads dizinini doğrudan Nginx ile servis etme ve MIME tiplerini tanımlama
+   location /uploads/ {
+       alias /var/www/qrmenutikla/public/uploads/;
+       
+       # MIME tipleri ve cache başlıkları
+       include mime.types;
+       types {
+           image/png png;
+           image/jpeg jpg jpeg;
+           image/webp webp;
+           video/mp4 mp4;
+           video/webm webm;
+           video/quicktime mov;
+       }
+       
+       # Video dosyalarının akış (range request) desteği için:
+       proxy_set_header Range $http_range;
+       proxy_set_header If-Range $http_if_range;
+       
+       expires 30d;
+       add_header Cache-Control "public, no-transform";
+       access_log off;
+   }
+   ```
