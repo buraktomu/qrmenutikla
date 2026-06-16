@@ -127,8 +127,14 @@ function getCategoryImage(cat: CategoryType, themeId: string = 'modern-cafe'): s
 
 function isVideoUrl(url: string | null | undefined): boolean {
   if (!url) return false;
-  const lowerUrl = url.toLowerCase().split('?')[0];
-  return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+  const cleanUrl = url.split('?')[0];
+  return /\.(mp4|webm|mov)$/i.test(cleanUrl);
+}
+
+function isImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0];
+  return /\.(png|jpg|jpeg|webp)$/i.test(cleanUrl);
 }
 
 function MediaDisplay({

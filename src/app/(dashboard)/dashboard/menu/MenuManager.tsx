@@ -66,8 +66,14 @@ type MenuManagerProps = {
 
 function isVideoUrl(url: string | null | undefined): boolean {
   if (!url) return false;
-  const lowerUrl = url.toLowerCase().split('?')[0];
-  return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+  const cleanUrl = url.split('?')[0];
+  return /\.(mp4|webm|mov)$/i.test(cleanUrl);
+}
+
+function isImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0];
+  return /\.(png|jpg|jpeg|webp)$/i.test(cleanUrl);
 }
 
 function MediaDisplay({
@@ -174,42 +180,85 @@ export default function MenuManager({
   // Image upload (device gallery / camera / drag-drop)
   const [uploadingProdImage, setUploadingProdImage] = useState(false);
   const [uploadingCatImage, setUploadingCatImage] = useState(false);
+  const [prodUploadProgress, setProdUploadProgress] = useState<number | null>(null);
+  const [catUploadProgress, setCatUploadProgress] = useState<number | null>(null);
   const prodImageInputRef = useRef<HTMLInputElement>(null);
   const catImageInputRef = useRef<HTMLInputElement>(null);
 
-  const uploadImageFile = async (file: File): Promise<string | null> => {
-    const fd = new FormData();
-    fd.append('file', file);
-    try {
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.url) return data.url as string;
-      showToast(data.error || 'Görsel yüklenemedi.', 'error');
-      return null;
-    } catch {
-      showToast('Görsel yükleme hatası oluştu.', 'error');
-      return null;
-    }
+  const uploadImageFile = (file: File, onProgress?: (pct: number) => void): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/upload', true);
+
+      if (onProgress && xhr.upload) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (data.url) {
+              resolve(data.url as string);
+              return;
+            }
+            showToast(data.error || 'Dosya yüklenemedi.', 'error');
+          } catch (e) {
+            showToast('Dosya yükleme hatası oluştu.', 'error');
+          }
+        } else {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            showToast(data.error || 'Dosya yüklenemedi.', 'error');
+          } catch {
+            showToast('Dosya yükleme hatası oluştu.', 'error');
+          }
+        }
+        resolve(null);
+      };
+
+      xhr.onerror = () => {
+        showToast('Dosya yükleme hatası oluştu.', 'error');
+        resolve(null);
+      };
+
+      const fd = new FormData();
+      fd.append('file', file);
+      xhr.send(fd);
+    });
   };
 
   const handleProdImageSelect = async (file: File) => {
     setUploadingProdImage(true);
-    const url = await uploadImageFile(file);
+    setProdUploadProgress(0);
+    const url = await uploadImageFile(file, (pct) => {
+      setProdUploadProgress(pct);
+    });
     if (url) {
       setPImageUrl(url);
-      showToast('Görsel başarıyla yüklendi.', 'success');
+      showToast('Dosya başarıyla yüklendi.', 'success');
     }
     setUploadingProdImage(false);
+    setProdUploadProgress(null);
   };
 
   const handleCatImageSelect = async (file: File) => {
     setUploadingCatImage(true);
-    const url = await uploadImageFile(file);
+    setCatUploadProgress(0);
+    const url = await uploadImageFile(file, (pct) => {
+      setCatUploadProgress(pct);
+    });
     if (url) {
       setCatImageUrlInput(url);
-      showToast('Görsel başarıyla yüklendi.', 'success');
+      showToast('Dosya başarıyla yüklendi.', 'success');
     }
     setUploadingCatImage(false);
+    setCatUploadProgress(null);
   };
 
   const activeCategory = categories.find((c) => c.id === activeCategoryId);
@@ -681,12 +730,25 @@ export default function MenuManager({
                     className="hidden"
                   />
                   {uploadingCatImage ? (
-                    <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                    <div className="flex flex-col items-center gap-2 w-full">
+                      <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                      {catUploadProgress !== null && (
+                        <div className="w-full max-w-[200px] bg-stone-250 border border-stone-200 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-indigo-600 h-full rounded-full transition-all duration-150"
+                            style={{ width: `${catUploadProgress}%` }}
+                          />
+                        </div>
+                      )}
+                      <span className="text-[10px] text-indigo-600 font-black">Yükleniyor... %{catUploadProgress ?? 0}</span>
+                    </div>
                   ) : (
-                    <UploadCloud className="w-7 h-7 text-stone-400" />
+                    <>
+                      <UploadCloud className="w-7 h-7 text-stone-400" />
+                      <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
+                      <span className="text-[10px] text-stone-400 font-bold">Resim (maks 2MB) veya Video (maks 50MB) yükleyebilirsiniz</span>
+                    </>
                   )}
-                  <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
-                  <span className="text-[10px] text-stone-400 font-bold">Resim (maks 2MB) veya Video (maks 50MB) yükleyebilirsiniz</span>
                 </div>
                 {catImageUrlInput && (
                   <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200 mt-1">
@@ -822,12 +884,25 @@ export default function MenuManager({
                         className="hidden"
                       />
                       {uploadingProdImage ? (
-                        <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                        <div className="flex flex-col items-center gap-2 w-full">
+                          <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                          {prodUploadProgress !== null && (
+                            <div className="w-full max-w-[200px] bg-stone-250 border border-stone-200 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-indigo-600 h-full rounded-full transition-all duration-150"
+                                style={{ width: `${prodUploadProgress}%` }}
+                              />
+                            </div>
+                          )}
+                          <span className="text-[10px] text-indigo-600 font-black">Yükleniyor... %{prodUploadProgress ?? 0}</span>
+                        </div>
                       ) : (
-                        <UploadCloud className="w-7 h-7 text-stone-400" />
+                        <>
+                          <UploadCloud className="w-7 h-7 text-stone-400" />
+                          <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
+                          <span className="text-[10px] text-stone-400 font-bold">Görsel (maks 2MB) veya Video (maks 50MB) yükleyebilirsiniz</span>
+                        </>
                       )}
-                      <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
-                      <span className="text-[10px] text-stone-400 font-bold">Görsel (maks 2MB) veya Video (maks 50MB) yükleyebilirsiniz</span>
                     </div>
                     {pImageUrl && (
                       <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200">

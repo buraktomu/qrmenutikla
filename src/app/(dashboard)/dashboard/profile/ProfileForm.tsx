@@ -41,6 +41,12 @@ type ProfileFormProps = {
   hasThemeSelectionLimit: boolean;
 };
 
+function isVideoUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0];
+  return /\.(mp4|webm|mov)$/i.test(cleanUrl);
+}
+
 export default function ProfileForm({ business }: ProfileFormProps) {
   const { showToast } = useToast();
   
@@ -67,42 +73,92 @@ export default function ProfileForm({ business }: ProfileFormProps) {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [logoProgress, setLogoProgress] = useState<number | null>(null);
+  const [videoProgress, setVideoProgress] = useState<number | null>(null);
+  const [imageProgress, setImageProgress] = useState<number | null>(null);
 
   // Input refs
   const logoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = async (file: File, target: 'logo' | 'video' | 'image') => {
+  const handleFileUpload = (file: File, target: 'logo' | 'video' | 'image') => {
+    if (target === 'logo') {
+      setUploadingLogo(true);
+      setLogoProgress(0);
+    }
+    if (target === 'video') {
+      setUploadingVideo(true);
+      setVideoProgress(0);
+    }
+    if (target === 'image') {
+      setUploadingImage(true);
+      setImageProgress(0);
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload', true);
+
+    if (xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          if (target === 'logo') setLogoProgress(percent);
+          if (target === 'video') setVideoProgress(percent);
+          if (target === 'image') setImageProgress(percent);
+        }
+      };
+    }
+
+    const cleanup = () => {
+      if (target === 'logo') {
+        setUploadingLogo(false);
+        setLogoProgress(null);
+      }
+      if (target === 'video') {
+        setUploadingVideo(false);
+        setVideoProgress(null);
+      }
+      if (target === 'image') {
+        setUploadingImage(false);
+        setImageProgress(null);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.url) {
+            if (target === 'logo') setLogoUrl(data.url);
+            if (target === 'video') setCoverVideoUrl(data.url);
+            if (target === 'image') setCoverImageUrl(data.url);
+            showToast('Dosya başarıyla yüklendi.', 'success');
+          } else {
+            showToast(data.error || 'Dosya yüklenemedi.', 'error');
+          }
+        } catch (e) {
+          showToast('Dosya yükleme hatası oluştu.', 'error');
+        }
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          showToast(data.error || 'Dosya yüklenemedi.', 'error');
+        } catch {
+          showToast('Dosya yükleme hatası oluştu.', 'error');
+        }
+      }
+      cleanup();
+    };
+
+    xhr.onerror = () => {
+      showToast('Dosya yükleme hatası.', 'error');
+      cleanup();
+    };
+
     const fd = new FormData();
     fd.append('file', file);
-    
-    if (target === 'logo') setUploadingLogo(true);
-    if (target === 'video') setUploadingVideo(true);
-    if (target === 'image') setUploadingImage(true);
-
-    try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: fd
-      });
-      const data = await res.json();
-      if (data.url) {
-        if (target === 'logo') setLogoUrl(data.url);
-        if (target === 'video') setCoverVideoUrl(data.url);
-        if (target === 'image') setCoverImageUrl(data.url);
-        showToast('Dosya başarıyla yüklendi.', 'success');
-      } else {
-        showToast(data.error || 'Dosya yüklenemedi.', 'error');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Dosya yükleme hatası.', 'error');
-    } finally {
-      setUploadingLogo(false);
-      setUploadingVideo(false);
-      setUploadingImage(false);
-    }
+    xhr.send(fd);
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -173,13 +229,10 @@ export default function ProfileForm({ business }: ProfileFormProps) {
         {currentValue ? (
           <div className="relative border border-stone-200 rounded-2xl p-4 bg-stone-50 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 overflow-hidden">
-              {type !== 'video' ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={currentValue} alt="Preview" className="w-12 h-12 rounded-xl object-cover border border-stone-200" />
+              {isVideoUrl(currentValue) ? (
+                <video src={currentValue} className="w-12 h-12 rounded-xl object-cover border border-stone-200" muted playsInline preload="metadata" />
               ) : (
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
-                  <Video className="w-6 h-6 text-indigo-600" />
-                </div>
+                <img src={currentValue} alt="Preview" className="w-12 h-12 rounded-xl object-cover border border-stone-200" />
               )}
               <div className="flex flex-col overflow-hidden">
                 <span className="text-xs font-bold text-black truncate">{currentValue.split('/').pop()}</span>
@@ -217,14 +270,32 @@ export default function ProfileForm({ business }: ProfileFormProps) {
               className="hidden"
             />
             {uploading ? (
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+              <div className="flex flex-col items-center gap-2 w-full">
+                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                {(() => {
+                  const progress = type === 'logo' ? logoProgress : type === 'video' ? videoProgress : imageProgress;
+                  return progress !== null ? (
+                    <div className="w-full max-w-[200px] bg-stone-250 border border-stone-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-indigo-600 h-full rounded-full transition-all duration-150"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  ) : null;
+                })()}
+                <span className="text-[10px] text-indigo-600 font-black">
+                  Yükleniyor... %{type === 'logo' ? logoProgress ?? 0 : type === 'video' ? videoProgress ?? 0 : imageProgress ?? 0}
+                </span>
+              </div>
             ) : (
-              <UploadCloud className="w-8 h-8 text-black" />
+              <>
+                <UploadCloud className="w-8 h-8 text-black" />
+                <div>
+                  <span className="text-xs font-black text-black">Yüklemek için tıklayın veya sürükleyin</span>
+                  <p className="text-[10px] text-black mt-1 font-bold">Dosyayı buraya bırakabilirsiniz</p>
+                </div>
+              </>
             )}
-            <div>
-              <span className="text-xs font-black text-black">Yüklemek için tıklayın veya sürükleyin</span>
-              <p className="text-[10px] text-black mt-1 font-bold">Dosyayı buraya bırakabilirsiniz</p>
-            </div>
           </div>
         )}
       </div>

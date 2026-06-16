@@ -24,6 +24,74 @@ type GalleryManagerProps = {
   initialImages: GalleryImage[];
 };
 
+function isVideoUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0];
+  return /\.(mp4|webm|mov)$/i.test(cleanUrl);
+}
+
+function isImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0];
+  return /\.(png|jpg|jpeg|webp)$/i.test(cleanUrl);
+}
+
+function MediaDisplay({
+  src,
+  alt,
+  className,
+  loading = 'lazy',
+  autoPlay = false,
+  loop = false,
+  controls = true,
+  fallback,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  loading?: 'lazy' | 'eager';
+  autoPlay?: boolean;
+  loop?: boolean;
+  controls?: boolean;
+  fallback?: React.ReactNode;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  React.useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  if (!src || hasError) {
+    return fallback ? <>{fallback}</> : null;
+  }
+
+  if (isVideoUrl(src)) {
+    return (
+      <video
+        src={src}
+        className={className}
+        controls={controls}
+        autoPlay={autoPlay}
+        loop={loop}
+        muted
+        playsInline
+        preload="metadata"
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      loading={loading}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 export default function GalleryManager({ initialImages }: GalleryManagerProps) {
   const { showToast } = useToast();
   const router = useRouter();
@@ -35,26 +103,59 @@ export default function GalleryManager({ initialImages }: GalleryManagerProps) {
   const [title, setTitle] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageSelect = async (file: File) => {
+  const handleImageSelect = (file: File) => {
     setUploading(true);
+    setUploadProgress(0);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload', true);
+
+    if (xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.url) {
+            setImageUrl(data.url);
+            showToast('Dosya başarıyla yüklendi.', 'success');
+          } else {
+            showToast(data.error || 'Dosya yüklenemedi.', 'error');
+          }
+        } catch (e) {
+          showToast('Dosya yükleme hatası oluştu.', 'error');
+        }
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          showToast(data.error || 'Dosya yüklenemedi.', 'error');
+        } catch {
+          showToast('Dosya yükleme hatası oluştu.', 'error');
+        }
+      }
+      setUploading(false);
+      setUploadProgress(null);
+    };
+
+    xhr.onerror = () => {
+      showToast('Dosya yükleme hatası oluştu.', 'error');
+      setUploading(false);
+      setUploadProgress(null);
+    };
+
     const fd = new FormData();
     fd.append('file', file);
-    try {
-      const res = await fetch('/api/upload', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.url) {
-        setImageUrl(data.url);
-        showToast('Görsel başarıyla yüklendi.', 'success');
-      } else {
-        showToast(data.error || 'Görsel yüklenemedi.', 'error');
-      }
-    } catch {
-      showToast('Görsel yükleme hatası oluştu.', 'error');
-    } finally {
-      setUploading(false);
-    }
+    xhr.send(fd);
   };
 
   const handleAddImage = async (e: React.FormEvent) => {
@@ -139,23 +240,35 @@ export default function GalleryManager({ initialImages }: GalleryManagerProps) {
           >
             <input
               type="file"
-              accept="image/*"
+              accept="image/*,video/*"
               ref={fileInputRef}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageSelect(f); }}
               className="hidden"
             />
             {uploading ? (
-              <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+              <div className="flex flex-col items-center gap-2 w-full">
+                <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                {uploadProgress !== null && (
+                  <div className="w-full max-w-[200px] bg-stone-250 border border-stone-200 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-indigo-600 h-full rounded-full transition-all duration-150"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                )}
+                <span className="text-[10px] text-indigo-600 font-black">Yükleniyor... %{uploadProgress ?? 0}</span>
+              </div>
             ) : (
-              <UploadCloud className="w-7 h-7 text-stone-400" />
+              <>
+                <UploadCloud className="w-7 h-7 text-stone-400" />
+                <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
+                <span className="text-[10px] text-stone-400 font-bold">Görsel (maks 2MB) veya Video (maks 50MB) yükleyebilirsiniz</span>
+              </>
             )}
-            <span className="text-xs font-black text-black">Galeriden / kameradan seçin veya sürükleyin</span>
-            <span className="text-[10px] text-stone-400 font-bold">PNG, JPG</span>
           </div>
           {imageUrl && (
             <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200 mt-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageUrl} alt="Önizleme" className="w-full h-full object-cover" />
+              <MediaDisplay src={imageUrl} alt="Önizleme" className="w-full h-full object-cover" controls autoPlay={false} loop={false} />
               <button
                 type="button"
                 onClick={() => setImageUrl('')}
@@ -187,8 +300,7 @@ export default function GalleryManager({ initialImages }: GalleryManagerProps) {
               className="p-3 bg-stone-50 border border-stone-150 rounded-xl flex flex-col justify-between group relative"
             >
               <div className="w-full h-24 rounded-lg bg-white border border-stone-200 overflow-hidden relative mb-2.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.imageUrl} alt={img.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <MediaDisplay src={img.imageUrl} alt={img.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" autoPlay loop controls={false} />
                 <span className="absolute top-1 left-1 text-[8px] bg-white/95 text-black px-1.5 py-0.5 rounded font-black border border-stone-200 uppercase tracking-wider">
                   {img.categoryKey}
                 </span>
