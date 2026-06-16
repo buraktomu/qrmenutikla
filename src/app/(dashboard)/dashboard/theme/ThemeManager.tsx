@@ -29,6 +29,9 @@ type ThemeManagerProps = {
     name: string;
     description: string | null;
     logoUrl: string | null;
+    coverVideoUrl: string | null;
+    coverImageUrl: string | null;
+    coverOpacity: number;
     allowOrders: boolean;
     showCalories: boolean;
     themeId: string;
@@ -39,10 +42,17 @@ type ThemeManagerProps = {
   hasThemeSelectionLimit: boolean;
 };
 
+function isVideoUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0];
+  return /\.(mp4|webm|mov)$/i.test(cleanUrl);
+}
+
 export default function ThemeManager({ business, hasThemeSelectionLimit }: ThemeManagerProps) {
   const { showToast } = useToast();
   
   const [selectedThemeId, setSelectedThemeId] = useState(business.themeId);
+  const [coverOpacity, setCoverOpacity] = useState(business.coverOpacity);
   const [loading, setLoading] = useState(false);
   const [premiumThemeContact, setPremiumThemeContact] = useState<ThemeConfig | null>(null);
 
@@ -67,7 +77,15 @@ export default function ThemeManager({ business, hasThemeSelectionLimit }: Theme
         whatsappNumber: '', 
         showCalories: business.showCalories, 
         allowOrders: business.allowOrders,
+        logoUrl: business.logoUrl || undefined,
+        coverVideoUrl: business.coverVideoUrl || undefined,
+        coverImageUrl: business.coverImageUrl || undefined,
+        coverOpacity: coverOpacity,
         themeId: selectedThemeId,
+        description: business.description || undefined,
+        instagramUrl: business.instagramUrl || undefined,
+        locationUrl: business.locationUrl || undefined,
+        reviewsUrl: business.reviewsUrl || undefined,
       });
 
       if (res.success) {
@@ -236,13 +254,34 @@ export default function ThemeManager({ business, hasThemeSelectionLimit }: Theme
               <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-16 h-3 rounded-full bg-black z-50" />
               
               {/* Splash Background Cover */}
-              <div className="absolute inset-0 z-0">
-                <img
-                  src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=70"
-                  alt="cover"
-                  className="w-full h-full object-cover brightness-[0.35]"
+              <div className="absolute inset-0 z-0 bg-black overflow-hidden">
+                {business.coverVideoUrl && isVideoUrl(business.coverVideoUrl) ? (
+                  <video
+                    src={business.coverVideoUrl}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={business.coverImageUrl || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=70'}
+                    alt="cover"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                {/* Adjustable Darkness Overlay */}
+                <div 
+                  className="absolute inset-0 bg-black pointer-events-none transition-all duration-100" 
+                  style={{ opacity: coverOpacity }} 
                 />
-                <div className={`absolute inset-0 bg-gradient-to-t ${isDarkPreview ? 'from-black/95 via-black/40 to-black/85' : 'from-stone-900/90 via-stone-900/30 to-stone-900/80'}`} />
+                {/* Standard subtle top gradient */}
+                <div 
+                  className={`absolute inset-0 bg-gradient-to-t ${isDarkPreview ? 'from-black/90 via-black/20 to-black/70' : 'from-stone-900/80 via-stone-900/10 to-stone-900/60'} pointer-events-none`} 
+                  style={{ opacity: 0.60 }}
+                />
               </div>
 
               {/* Splash Content */}
@@ -613,6 +652,33 @@ export default function ThemeManager({ business, hasThemeSelectionLimit }: Theme
             </div>
           </div>
 
+        </div>
+
+        {/* BACKGROUND DARKNESS SLIDER (ÇİZGİ VE TOP) */}
+        <div className="w-full max-w-[450px] bg-zinc-950 border border-zinc-900 rounded-2xl p-4 flex flex-col gap-3 shadow-md">
+          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-zinc-400">
+            <span>Giriş Ekranı Arka Plan Karartma Derecesi</span>
+            <span className="text-indigo-400 font-mono text-xs">%{Math.round(coverOpacity * 100)}</span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Açık</span>
+            <div className="flex-1 relative flex items-center">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={coverOpacity}
+                onChange={(e) => setCoverOpacity(parseFloat(e.target.value))}
+                className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                style={{
+                  background: `linear-gradient(to right, #6366f1 0%, #6366f1 ${coverOpacity * 100}%, #27272a ${coverOpacity * 100}%, #27272a 100%)`
+                }}
+              />
+            </div>
+            <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Koyu</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-1.5 text-[9px] text-zinc-500 max-w-[450px] text-center font-medium leading-relaxed">

@@ -3,13 +3,20 @@ import { prisma } from '@/lib/prisma';
 export type PlatformSettings = {
   aiEnabled: boolean;
   orderingEnabled: boolean;
+  openaiApiKey: string | null;
+  aiModel: string;
+  maxTokens: number;
+  temperature: number;
 };
 
 // Safe defaults used before the row exists or if the table is missing
-// (e.g. before the migration has been applied).
 const DEFAULTS: PlatformSettings = {
   aiEnabled: true,
   orderingEnabled: true,
+  openaiApiKey: null,
+  aiModel: 'gpt-4o-mini',
+  maxTokens: 500,
+  temperature: 0.7,
 };
 
 /**
@@ -26,6 +33,10 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     return {
       aiEnabled: row.aiEnabled,
       orderingEnabled: row.orderingEnabled,
+      openaiApiKey: row.openaiApiKey,
+      aiModel: row.aiModel,
+      maxTokens: row.maxTokens,
+      temperature: row.temperature,
     };
   } catch {
     return DEFAULTS;

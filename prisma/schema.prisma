@@ -36,6 +36,7 @@ model Business {
   allowOrders    Boolean      @default(false)
   coverVideoUrl  String?
   coverImageUrl  String?
+  coverOpacity   Float        @default(0.50)
   themeId        String       @default("modern-cafe") // Theme preset key
   status         String       @default("ACTIVE") // "DRAFT", "ACTIVE", or "SUSPENDED"
   openingHours   String?      // e.g. "09:00 - 23:00"
@@ -43,6 +44,8 @@ model Business {
   instagramUrl   String?
   locationUrl    String?
   reviewsUrl     String?
+  useOwnApiKey    Boolean      @default(false)
+  customOpenAiKey String?
   categories     Category[]
   subscription   Subscription?
   visitorLogs    VisitorLog[]
@@ -142,5 +145,9 @@ model PlatformSetting {
   id              String   @id @default("global")
   aiEnabled       Boolean  @default(true) // Master switch for all AI features
   orderingEnabled Boolean  @default(true) // Master switch for ordering / waiter-call
+  openaiApiKey    String?
+  aiModel         String   @default("gpt-4o-mini")
+  maxTokens       Int      @default(500)
+  temperature     Float    @default(0.7)
   updatedAt       DateTime @updatedAt
 }

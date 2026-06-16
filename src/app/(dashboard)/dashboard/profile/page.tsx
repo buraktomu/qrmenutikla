@@ -2,6 +2,8 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
+import { decrypt } from '@/lib/encryption';
+import { maskApiKey } from '@/app/actions/ai-settings';
 import ProfileForm from './ProfileForm';
 
 export default async function ProfilePage() {
@@ -37,6 +39,10 @@ export default async function ProfilePage() {
   const activePlanId = business.subscription?.planId || 'starter';
   const hasThemeSelectionLimit = activePlanId === 'starter';
 
+  // Decrypt and mask the merchant's key
+  const decryptedKey = business.customOpenAiKey ? decrypt(business.customOpenAiKey) : '';
+  const maskedKey = decryptedKey ? maskApiKey(decryptedKey) : '';
+
   return (
     <div className="flex flex-col gap-6 text-black">
       <div>
@@ -67,6 +73,8 @@ export default async function ProfilePage() {
           instagramUrl: business.instagramUrl,
           locationUrl: business.locationUrl,
           reviewsUrl: business.reviewsUrl,
+          useOwnApiKey: business.useOwnApiKey,
+          customOpenAiKey: maskedKey,
         }}
         hasThemeSelectionLimit={hasThemeSelectionLimit}
       />

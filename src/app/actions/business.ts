@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
+import { encrypt } from '@/lib/encryption';
 
 const businessUpdateSchema = z.object({
   name: z.string().min(2, 'İşletme adı en az 2 karakter olmalıdır.'),
@@ -25,6 +26,7 @@ const businessUpdateSchema = z.object({
   logoUrl: z.string().optional(),
   coverVideoUrl: z.string().optional(),
   coverImageUrl: z.string().optional(),
+  coverOpacity: z.number().min(0).max(1).default(0.50),
   themeId: z.string().min(2, 'Lütfen geçerli bir tema seçin.'),
   description: z.string().optional(),
   openingHours: z.string().optional(),
@@ -32,6 +34,8 @@ const businessUpdateSchema = z.object({
   instagramUrl: z.string().optional(),
   locationUrl: z.string().optional(),
   reviewsUrl: z.string().optional(),
+  useOwnApiKey: z.boolean().default(false),
+  customOpenAiKey: z.string().nullable().optional(),
 });
 
 export async function updateBusinessSettings(
@@ -46,6 +50,7 @@ export async function updateBusinessSettings(
     logoUrl?: string;
     coverVideoUrl?: string;
     coverImageUrl?: string;
+    coverOpacity?: number;
     themeId: string;
     description?: string;
     openingHours?: string;
@@ -53,6 +58,8 @@ export async function updateBusinessSettings(
     instagramUrl?: string;
     locationUrl?: string;
     reviewsUrl?: string;
+    useOwnApiKey?: boolean;
+    customOpenAiKey?: string | null;
   }
 ) {
   const session = await auth();
@@ -75,9 +82,37 @@ export async function updateBusinessSettings(
     return { success: false, error: validation.error.issues[0].message };
   }
 
-  const { name, phone, address, whatsappNumber, showCalories, allowOrders, logoUrl, coverVideoUrl, coverImageUrl, themeId, description, openingHours, serviceType, instagramUrl, locationUrl, reviewsUrl } = validation.data;
+  const {
+    name,
+    phone,
+    address,
+    whatsappNumber,
+    showCalories,
+    allowOrders,
+    logoUrl,
+    coverVideoUrl,
+    coverImageUrl,
+    coverOpacity,
+    themeId,
+    description,
+    openingHours,
+    serviceType,
+    instagramUrl,
+    locationUrl,
+    reviewsUrl,
+    useOwnApiKey,
+    customOpenAiKey,
+  } = validation.data;
 
   try {
+    let finalApiKeyEncrypted = business?.customOpenAiKey || null;
+
+    if (customOpenAiKey === '') {
+      finalApiKeyEncrypted = null;
+    } else if (customOpenAiKey && !customOpenAiKey.includes('****')) {
+      finalApiKeyEncrypted = encrypt(customOpenAiKey);
+    }
+
     await prisma.business.update({
       where: { id: businessId },
       data: {
@@ -90,6 +125,7 @@ export async function updateBusinessSettings(
         logoUrl,
         coverVideoUrl,
         coverImageUrl,
+        coverOpacity,
         themeId,
         description,
         openingHours: openingHours || null,
@@ -97,6 +133,8 @@ export async function updateBusinessSettings(
         instagramUrl: instagramUrl || null,
         locationUrl: locationUrl || null,
         reviewsUrl: reviewsUrl || null,
+        useOwnApiKey,
+        customOpenAiKey: finalApiKeyEncrypted,
       },
     });
 

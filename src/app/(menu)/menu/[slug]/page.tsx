@@ -112,6 +112,7 @@ export default async function PublicMenuPage(
         logoUrl: business.logoUrl,
         coverVideoUrl: business.coverVideoUrl,
         coverImageUrl: business.coverImageUrl,
+        coverOpacity: business.coverOpacity,
         themeId: business.themeId,
         openingHours: business.openingHours,
         serviceType: business.serviceType,

@@ -16,7 +16,10 @@ import {
   Loader2,
   Trash2,
   Clock,
+  Key,
+  Cpu
 } from 'lucide-react';
+import { testOpenAiConnectionAction } from '@/app/actions/ai-settings';
 
 type ProfileFormProps = {
   business: {
@@ -37,6 +40,8 @@ type ProfileFormProps = {
     instagramUrl: string | null;
     locationUrl: string | null;
     reviewsUrl: string | null;
+    useOwnApiKey: boolean;
+    customOpenAiKey: string;
   };
   hasThemeSelectionLimit: boolean;
 };
@@ -67,7 +72,12 @@ export default function ProfileForm({ business }: ProfileFormProps) {
   const [instagramUrl, setInstagramUrl] = useState(business.instagramUrl || '');
   const [locationUrl, setLocationUrl] = useState(business.locationUrl || '');
   const [reviewsUrl, setReviewsUrl] = useState(business.reviewsUrl || '');
+  const [useOwnApiKey, setUseOwnApiKey] = useState(business.useOwnApiKey || false);
+  const [customOpenAiKey, setCustomOpenAiKey] = useState(business.customOpenAiKey || '');
+
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // File Upload State
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -173,6 +183,31 @@ export default function ProfileForm({ business }: ProfileFormProps) {
     }
   };
 
+  const handleTestConnection = async () => {
+    if (!customOpenAiKey) {
+      showToast('Lütfen önce bir API Anahtarı girin.', 'error');
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+
+    const res = await testOpenAiConnectionAction(customOpenAiKey, 'gpt-4o-mini', 'business', business.id);
+    if (res.success) {
+      setTestResult({
+        success: true,
+        message: '✅ API bağlantısı başarılı',
+      });
+      showToast('API bağlantısı başarılı.', 'success');
+    } else {
+      setTestResult({
+        success: false,
+        message: `❌ Hata: ${res.error || 'Bilinmeyen bir hata oluştu.'}`,
+      });
+      showToast('API bağlantısı başarısız.', 'error');
+    }
+    setTesting(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) {
@@ -199,6 +234,8 @@ export default function ProfileForm({ business }: ProfileFormProps) {
         instagramUrl,
         locationUrl,
         reviewsUrl,
+        useOwnApiKey,
+        customOpenAiKey,
       });
 
       if (res.success) {
@@ -523,6 +560,69 @@ export default function ProfileForm({ business }: ProfileFormProps) {
               placeholder="https://g.page/r/.../review"
               className="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500/10 text-sm outline-none transition-all text-black font-semibold"
             />
+          </div>
+        </div>
+
+        {/* Yapay Zeka (AI) Ayarları */}
+        <div className="flex flex-col gap-4 border-t border-stone-150 pt-5 mt-4">
+          <h3 className="text-base font-black text-black border-b border-stone-150 pb-3">Yapay Zeka (AI) Ayarları</h3>
+          
+          <div className="bg-stone-50 rounded-2xl border border-stone-200 p-5 flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-black">Kendi OpenAI API Anahtarımı Kullan</span>
+                <span className="text-[11px] text-stone-500 font-semibold mt-1 leading-relaxed">
+                  Aktif edildiğinde platformun ortak API anahtarı yerine kendi tanımlayacağınız API anahtarı kullanılır.
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                <input
+                  type="checkbox"
+                  checked={useOwnApiKey}
+                  onChange={(e) => setUseOwnApiKey(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-stone-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-stone-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600" />
+              </label>
+            </div>
+
+            {useOwnApiKey && (
+              <div className="flex flex-col gap-3 mt-2 animate-fade-in">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-black flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-stone-500" />
+                    Özel OpenAI API Anahtarı
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="text"
+                      value={customOpenAiKey}
+                      onChange={(e) => setCustomOpenAiKey(e.target.value)}
+                      placeholder="sk-..."
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-stone-250 focus:border-indigo-500 text-xs font-semibold outline-none text-black"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestConnection}
+                      disabled={testing || !customOpenAiKey}
+                      className="px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-xs font-black text-stone-700 transition-colors shrink-0 disabled:opacity-50"
+                    >
+                      {testing ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}
+                    </button>
+                  </div>
+                </div>
+
+                {testResult && (
+                  <div className={`p-4 rounded-xl border text-xs font-bold flex items-start gap-2.5 ${
+                    testResult.success 
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                      : 'bg-red-50 border-red-200 text-red-800'
+                  }`}>
+                    <span>{testResult.message}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

@@ -32,8 +32,8 @@ export default async function QrCodePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-white tracking-tight">QR Kod Oluşturucu</h1>
-        <p className="text-xs text-zinc-500 font-light mt-1">
+        <h1 className="text-2xl font-extrabold text-black tracking-tight">QR Kod Oluşturucu</h1>
+        <p className="text-xs text-stone-900 font-bold mt-1">
           Müşterilerinizin masadan okutabileceği karekod görsellerini özelleştirin ve indirin.
         </p>
       </div>

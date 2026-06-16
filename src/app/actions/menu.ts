@@ -294,11 +294,22 @@ export async function deleteProduct(businessId: string, categoryId: string, prod
 // -------------------------------------------------------------
 // AI ACTIONS
 // -------------------------------------------------------------
+async function getSessionBusinessId(): Promise<string | undefined> {
+  const session = await auth();
+  if (!session?.user?.email) return undefined;
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { businesses: true },
+  });
+  return user?.businesses[0]?.id;
+}
+
 export async function getAIDescription(productName: string, categoryName: string) {
   const settings = await getPlatformSettings();
   if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
+  const businessId = await getSessionBusinessId();
   try {
-    const desc = await generateProductDescription(productName, categoryName);
+    const desc = await generateProductDescription(productName, categoryName, businessId);
     return { success: true, result: desc };
   } catch (error) {
     return { success: false, error: 'Yapay zeka açıklaması üretilemedi.' };
@@ -308,8 +319,9 @@ export async function getAIDescription(productName: string, categoryName: string
 export async function getAIMacros(productName: string, description: string) {
   const settings = await getPlatformSettings();
   if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
+  const businessId = await getSessionBusinessId();
   try {
-    const macros = await predictCaloriesAndMacros(productName, description);
+    const macros = await predictCaloriesAndMacros(productName, description, businessId);
     return { success: true, result: macros };
   } catch (error) {
     return { success: false, error: 'Makro değerleri hesaplanamadı.' };
@@ -319,8 +331,9 @@ export async function getAIMacros(productName: string, description: string) {
 export async function getAICategory(productName: string) {
   const settings = await getPlatformSettings();
   if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
+  const businessId = await getSessionBusinessId();
   try {
-    const cat = await suggestProductCategory(productName);
+    const cat = await suggestProductCategory(productName, businessId);
     return { success: true, result: cat };
   } catch (error) {
     return { success: false, error: 'Kategori önerisi alınamadı.' };
@@ -330,8 +343,9 @@ export async function getAICategory(productName: string) {
 export async function getAICampaign(productName: string, discount: number) {
   const settings = await getPlatformSettings();
   if (!settings.aiEnabled) return { success: false, error: AI_DISABLED_MSG };
+  const businessId = await getSessionBusinessId();
   try {
-    const campaign = await generateCampaignText(productName, discount);
+    const campaign = await generateCampaignText(productName, discount, businessId);
     return { success: true, result: campaign };
   } catch (error) {
     return { success: false, error: 'Kampanya metni oluşturulamadı.' };

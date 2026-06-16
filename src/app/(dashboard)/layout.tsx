@@ -19,7 +19,8 @@ import {
   Users,
   Building2,
   SlidersHorizontal,
-  BadgeCheck
+  BadgeCheck,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
@@ -71,6 +72,7 @@ export default function DashboardLayout({
         { href: '/admin/subscriptions', label: 'Abonelik Yönetimi', icon: CreditCard },
         { href: '/admin/gallery', label: 'Ortak Görsel Galerisi', icon: Palette },
         { href: '/admin/settings', label: 'Sistem Ayarları', icon: SlidersHorizontal },
+        { href: '/admin/settings/ai', label: 'AI Sistem Ayarları', icon: Sparkles },
       ]
     : [
         { href: '/dashboard', label: 'Özet Panel', icon: LayoutDashboard },

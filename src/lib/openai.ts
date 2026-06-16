@@ -1,12 +1,70 @@
 import { OpenAI } from 'openai';
+import { prisma } from '@/lib/prisma';
+import { decrypt } from '@/lib/encryption';
 
-// Initialize OpenAI client only if API key is provided
-let openai: OpenAI | null = null;
-if (process.env.OPENAI_API_KEY) {
-  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export type OpenAIConfig = {
+  openai: OpenAI;
+  model: string;
+  maxTokens: number;
+  temperature: number;
+};
+
+/**
+ * Dynamically resolves the OpenAI configuration.
+ * 1. Checks if business-specific key is used.
+ * 2. Falls back to platform key.
+ * 3. Falls back to environment variable.
+ */
+export async function getOpenAIConfig(businessId?: string): Promise<OpenAIConfig | null> {
+  try {
+    const platform = await prisma.platformSetting.findUnique({
+      where: { id: 'global' },
+    });
+
+    // Master Switch check
+    if (platform && !platform.aiEnabled) {
+      return null;
+    }
+
+    const aiModel = platform?.aiModel || 'gpt-4o-mini';
+    const maxTokens = platform?.maxTokens || 500;
+    const temperature = platform?.temperature ?? 0.7;
+
+    let resolvedKey: string | null = null;
+
+    if (businessId) {
+      const business = await prisma.business.findUnique({
+        where: { id: businessId },
+      });
+      if (business?.useOwnApiKey && business.customOpenAiKey) {
+        resolvedKey = decrypt(business.customOpenAiKey);
+      }
+    }
+
+    if (!resolvedKey && platform?.openaiApiKey) {
+      resolvedKey = decrypt(platform.openaiApiKey);
+    }
+
+    if (!resolvedKey) {
+      resolvedKey = process.env.OPENAI_API_KEY || null;
+    }
+
+    if (!resolvedKey) {
+      return null;
+    }
+
+    return {
+      openai: new OpenAI({ apiKey: resolvedKey }),
+      model: aiModel,
+      maxTokens,
+      temperature,
+    };
+  } catch (error) {
+    console.error('getOpenAIConfig error:', error);
+    return null;
+  }
 }
 
-// Helper for simulating artificial network delay during mock execution
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
@@ -14,12 +72,15 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  */
 export async function generateProductDescription(
   productName: string,
-  category: string
+  category: string,
+  businessId?: string
 ): Promise<string> {
-  if (openai) {
+  const config = await getOpenAIConfig(businessId);
+  if (config) {
+    const { openai, model, maxTokens, temperature } = config;
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: model,
         messages: [
           {
             role: 'system',
@@ -30,7 +91,8 @@ export async function generateProductDescription(
             content: `Ürün Adı: ${productName}, Kategori: ${category}`,
           },
         ],
-        max_tokens: 150,
+        max_tokens: Math.min(maxTokens, 150),
+        temperature: temperature,
       });
       return response.choices[0]?.message?.content?.trim() || '';
     } catch (error) {
@@ -38,7 +100,7 @@ export async function generateProductDescription(
     }
   }
 
-  // Smart Mock Fallback
+  // Fallback
   await sleep(1000);
   const nameLower = productName.toLowerCase();
   
@@ -66,12 +128,15 @@ export async function generateProductDescription(
  */
 export async function generateSeoDescription(
   businessName: string,
-  location: string
+  location: string,
+  businessId?: string
 ): Promise<string> {
-  if (openai) {
+  const config = await getOpenAIConfig(businessId);
+  if (config) {
+    const { openai, model, maxTokens, temperature } = config;
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: model,
         messages: [
           {
             role: 'system',
@@ -82,7 +147,8 @@ export async function generateSeoDescription(
             content: `İşletme Adı: ${businessName}, Lokasyon: ${location}`,
           },
         ],
-        max_tokens: 100,
+        max_tokens: Math.min(maxTokens, 100),
+        temperature: temperature,
       });
       return response.choices[0]?.message?.content?.trim() || '';
     } catch (error) {
@@ -99,14 +165,17 @@ export async function generateSeoDescription(
  */
 export async function predictCaloriesAndMacros(
   productName: string,
-  description: string
+  description: string,
+  businessId?: string
 ): Promise<{ calories: number; protein: number; carbs: number; fat: number }> {
   const defaultReturn = { calories: 250, protein: 8, carbs: 30, fat: 10 };
 
-  if (openai) {
+  const config = await getOpenAIConfig(businessId);
+  if (config) {
+    const { openai, model, maxTokens, temperature } = config;
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: model,
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -118,7 +187,8 @@ export async function predictCaloriesAndMacros(
             content: `Ürün Adı: ${productName}, Açıklama: ${description}`,
           },
         ],
-        max_tokens: 150,
+        max_tokens: Math.min(maxTokens, 150),
+        temperature: temperature,
       });
       
       const parsed = JSON.parse(response.choices[0]?.message?.content || '{}');
@@ -158,11 +228,13 @@ export async function predictCaloriesAndMacros(
 /**
  * Suggests the best fit menu category.
  */
-export async function suggestProductCategory(productName: string): Promise<string> {
-  if (openai) {
+export async function suggestProductCategory(productName: string, businessId?: string): Promise<string> {
+  const config = await getOpenAIConfig(businessId);
+  if (config) {
+    const { openai, model, maxTokens, temperature } = config;
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: model,
         messages: [
           {
             role: 'system',
@@ -173,7 +245,8 @@ export async function suggestProductCategory(productName: string): Promise<strin
             content: `Ürün Adı: ${productName}`,
           },
         ],
-        max_tokens: 50,
+        max_tokens: Math.min(maxTokens, 50),
+        temperature: temperature,
       });
       return response.choices[0]?.message?.content?.trim() || '';
     } catch (error) {
@@ -201,12 +274,15 @@ export async function suggestProductCategory(productName: string): Promise<strin
  */
 export async function generateCampaignText(
   productName: string,
-  discountPercent: number
+  discountPercent: number,
+  businessId?: string
 ): Promise<string> {
-  if (openai) {
+  const config = await getOpenAIConfig(businessId);
+  if (config) {
+    const { openai, model, maxTokens, temperature } = config;
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: model,
         messages: [
           {
             role: 'system',
@@ -217,7 +293,8 @@ export async function generateCampaignText(
             content: `Ürün: ${productName}, İndirim Oranı: %${discountPercent}`,
           },
         ],
-        max_tokens: 150,
+        max_tokens: Math.min(maxTokens, 150),
+        temperature: temperature,
       });
       return response.choices[0]?.message?.content?.trim() || '';
     } catch (error) {

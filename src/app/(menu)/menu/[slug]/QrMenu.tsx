@@ -59,6 +59,7 @@ type QrMenuProps = {
     logoUrl: string | null;
     coverVideoUrl: string | null;
     coverImageUrl: string | null;
+    coverOpacity: number;
     themeId: string;
     openingHours: string | null;
     serviceType: string;
@@ -571,23 +572,30 @@ function SplashScreen({ business, theme, leaving, onEnter }: SplashProps) {
     >
       {/* Background media */}
       <div className="absolute inset-0 z-0 bg-black overflow-hidden">
-        {business.coverVideoUrl ? (
+        {business.coverVideoUrl && isVideoUrl(finalCoverVideo) ? (
           <video
             src={finalCoverVideo}
             autoPlay loop muted playsInline
             className="w-full h-full object-cover"
-            style={{ filter: 'brightness(0.40) saturate(1.05)' }}
+            preload="metadata"
           />
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={finalCoverImage}
             alt={business.name}
             className="w-full h-full object-cover"
-            style={{ filter: 'brightness(0.35) saturate(1.05)' }}
           />
         )}
-        <div className={`absolute inset-0 bg-gradient-to-t ${overlay}`} />
+        {/* Adjustable darkness overlay */}
+        <div 
+          className="absolute inset-0 bg-black pointer-events-none" 
+          style={{ opacity: business.coverOpacity }} 
+        />
+        {/* Standard subtle gradient on top */}
+        <div 
+          className={`absolute inset-0 bg-gradient-to-t ${overlay} pointer-events-none`} 
+          style={{ opacity: 0.60 }}
+        />
       </div>
 
       {/* ── Content container ── */}
