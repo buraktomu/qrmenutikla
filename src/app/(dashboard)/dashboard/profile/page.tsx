@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
-import { maskApiKey } from '@/app/actions/ai-settings';
+import { maskApiKey } from '@/lib/maskApiKey';
 import ProfileForm from './ProfileForm';
 
 export default async function ProfilePage() {

@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/encryption';
 import { OpenAI } from 'openai';
 import { z } from 'zod';
+import { maskApiKey } from '@/lib/maskApiKey';
 
 // Zod schemas for validation
 const platformAiSettingsSchema = z.object({
@@ -21,13 +22,6 @@ const businessAiSettingsSchema = z.object({
   customOpenAiKey: z.string().nullable().optional(),
 });
 
-// Helper: Mask API Key
-export function maskApiKey(key: string | null | undefined): string {
-  if (!key) return '';
-  const prefix = key.startsWith('sk-') ? 'sk-' : key.slice(0, 3);
-  const suffix = key.slice(-4);
-  return `${prefix}****${suffix}`;
-}
 
 // Helper: Verify the user is a Super Admin
 async function verifyAdminRole() {
