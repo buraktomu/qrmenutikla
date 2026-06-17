@@ -47,3 +47,6 @@ dev.db
 prisma/dev.db
 *.db
 *.db-journal
+prisma/dev.db
+*.db
+*.db-journal
