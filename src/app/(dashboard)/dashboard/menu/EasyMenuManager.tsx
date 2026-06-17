@@ -19,6 +19,7 @@ import {
 type EasyMenuManagerProps = {
   businessId: string;
   onSuccess: () => void;
+  activeMenuId: string;
 };
 
 type ParsedProduct = {
@@ -32,7 +33,7 @@ type ParsedCategory = {
   products: ParsedProduct[];
 };
 
-export default function EasyMenuManager({ businessId, onSuccess }: EasyMenuManagerProps) {
+export default function EasyMenuManager({ businessId, onSuccess, activeMenuId }: EasyMenuManagerProps) {
   const { showToast } = useToast();
   const [activeMode, setActiveMode] = useState<'text' | 'photo'>('text');
 
@@ -56,7 +57,7 @@ export default function EasyMenuManager({ businessId, onSuccess }: EasyMenuManag
       return;
     }
     setImportingText(true);
-    const res = await importTextMenuAction(businessId, textMenu);
+    const res = await importTextMenuAction(businessId, textMenu, activeMenuId);
     if (res.success) {
       showToast('Menü başarıyla aktarıldı.', 'success');
       setTextMenu('');
@@ -216,7 +217,7 @@ export default function EasyMenuManager({ businessId, onSuccess }: EasyMenuManag
     }
 
     setSavingMenu(true);
-    const res = await saveEasyMenuAction(businessId, previewData);
+    const res = await saveEasyMenuAction(businessId, previewData, activeMenuId);
     if (res.success) {
       showToast('Kategoriler ve ürünler menünüze başarıyla aktarıldı!', 'success');
       setPreviewData(null);

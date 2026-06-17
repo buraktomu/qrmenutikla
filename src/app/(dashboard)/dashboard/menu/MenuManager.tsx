@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ToastProvider';
 import { COMMON_GALLERY } from '@/config/gallery';
 import { 
@@ -68,6 +69,11 @@ type MenuManagerProps = {
     title: string;
     imageUrl: string;
   }[];
+  menus?: {
+    id: string;
+    name: string;
+  }[];
+  activeMenuId: string;
 };
 
 function isVideoUrl(url: string | null | undefined): boolean {
@@ -144,9 +150,12 @@ export default function MenuManager({
   hasAI, 
   hasNutrients, 
   hasWhatsApp,
-  dbGalleryImages = []
+  dbGalleryImages = [],
+  menus = [],
+  activeMenuId
 }: MenuManagerProps) {
   const { showToast } = useToast();
+  const router = useRouter();
 
   const combinedGallery = React.useMemo(() => {
     const gallery: Record<string, { title: string; imageUrl: string }[]> = {};
@@ -328,7 +337,7 @@ export default function MenuManager({
     if (catEditing) {
       res = await updateCategory(businessId, catEditing.id, catNameInput, catImageUrlInput || null);
     } else {
-      res = await createCategory(businessId, catNameInput);
+      res = await createCategory(businessId, catNameInput, activeMenuId);
     }
 
     if (res.success) {
@@ -548,6 +557,29 @@ export default function MenuManager({
   return (
     <div className="flex flex-col gap-6 text-black">
       
+      {/* Menu Selector */}
+      {menus.length > 0 && (
+        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-black text-stone-700">Düzenlenen Menü:</span>
+            <select
+              value={activeMenuId}
+              onChange={(e) => router.push(`/dashboard/menu?menuId=${e.target.value}`)}
+              className="px-3 py-2 rounded-xl bg-stone-50 border border-stone-250 focus:border-indigo-500 focus:bg-white text-xs outline-none text-black font-extrabold"
+            >
+              {menus.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-[10px] text-stone-400 font-bold sm:text-right">
+            Menüleri ve şubeleri şube yönetiminden organize edebilirsiniz.
+          </p>
+        </div>
+      )}
+
       {/* Tab Switcher */}
       <div className="flex gap-2 p-1 bg-stone-100 rounded-xl border border-stone-250 w-fit text-xs font-black">
         <button
@@ -565,7 +597,7 @@ export default function MenuManager({
       </div>
 
       {activeManagerTab === 'easy' ? (
-        <EasyMenuManager businessId={businessId} onSuccess={() => window.location.reload()} />
+        <EasyMenuManager businessId={businessId} onSuccess={() => window.location.reload()} activeMenuId={activeMenuId} />
       ) : (
         <>
           {/* Category Tabs Wrapper */}

@@ -5,26 +5,23 @@ import { prisma } from '@/lib/prisma';
 import { getPlatformSettings } from '@/lib/settings';
 import MenuManager from './MenuManager';
 
-export default async function MenuPage() {
+export default async function MenuPage(props: {
+  searchParams: Promise<{ menuId?: string }>;
+}) {
   const session = await auth();
 
   if (!session?.user?.email) {
     redirect('/login');
   }
 
-  // Load user business, categories, and subscription
+  // Load user business, menus, and subscription
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
       businesses: {
         include: {
-          categories: {
-            include: {
-              products: {
-                orderBy: { sortOrder: 'asc' },
-              },
-            },
-            orderBy: { sortOrder: 'asc' },
+          menus: {
+            orderBy: { createdAt: 'asc' },
           },
           subscription: {
             include: {
@@ -46,6 +43,36 @@ export default async function MenuPage() {
     );
   }
 
+  // Ensure default menu exists
+  let menus = business.menus;
+  if (menus.length === 0) {
+    const defaultMenu = await prisma.menu.create({
+      data: {
+        businessId: business.id,
+        name: `${business.name} Menü`,
+      },
+    });
+    menus = [defaultMenu];
+  }
+
+  // Get active menuId from searchParams
+  const searchParamsResolved = await props.searchParams;
+  const activeMenuId = searchParamsResolved?.menuId || menus[0].id;
+
+  // Load categories for this activeMenuId
+  const categories = await prisma.category.findMany({
+    where: {
+      businessId: business.id,
+      menuId: activeMenuId,
+    },
+    include: {
+      products: {
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+    orderBy: { sortOrder: 'asc' },
+  });
+
   // Plan capability configs (combined with platform-wide flags)
   const settings = await getPlatformSettings();
   const plan = business.subscription?.plan;
@@ -66,11 +93,13 @@ export default async function MenuPage() {
 
       <MenuManager
         businessId={business.id}
-        initialCategories={business.categories}
+        initialCategories={categories}
         hasAI={hasAI}
         hasNutrients={hasNutrients}
         hasWhatsApp={hasWhatsApp}
         dbGalleryImages={await prisma.commonGalleryImage.findMany()}
+        menus={menus}
+        activeMenuId={activeMenuId}
       />
     </div>
   );

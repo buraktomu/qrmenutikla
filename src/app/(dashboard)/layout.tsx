@@ -20,7 +20,8 @@ import {
   Building2,
   SlidersHorizontal,
   BadgeCheck,
-  Sparkles
+  Sparkles,
+  Store
 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
@@ -77,6 +78,7 @@ export default function DashboardLayout({
     : [
         { href: '/dashboard', label: 'Özet Panel', icon: LayoutDashboard },
         { href: '/dashboard/menu', label: 'Menü Yönetimi', icon: MenuSquare },
+        { href: '/dashboard/branches', label: 'Şube Yönetimi', icon: Store },
         { href: '/dashboard/qr', label: 'QR Kod Oluşturucu', icon: QrCode },
         { href: '/dashboard/theme', label: 'Tema Seçimi', icon: Palette },
         { href: '/dashboard/profile', label: 'Profil & Ayarlar', icon: Settings },

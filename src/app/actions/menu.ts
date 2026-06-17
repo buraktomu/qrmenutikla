@@ -85,7 +85,7 @@ async function verifySubscriptionLimits(businessId: string, type: 'categories' |
 // -------------------------------------------------------------
 // CATEGORY ACTIONS
 // -------------------------------------------------------------
-export async function createCategory(businessId: string, name: string) {
+export async function createCategory(businessId: string, name: string, menuId?: string | null) {
   const owner = await verifyBusinessOwnership(businessId);
   if (!owner) return { success: false, error: 'Yetkisiz erişim.' };
 
@@ -106,6 +106,7 @@ export async function createCategory(businessId: string, name: string) {
     await prisma.category.create({
       data: {
         businessId,
+        menuId: menuId || null,
         name,
         sortOrder: count,
       },
@@ -361,7 +362,7 @@ export async function getAICampaign(productName: string, discount: number) {
 /**
  * Parses quick text content to add categories and products.
  */
-export async function importTextMenuAction(businessId: string, text: string) {
+export async function importTextMenuAction(businessId: string, text: string, menuId?: string | null) {
   const owner = await verifyBusinessOwnership(businessId);
   if (!owner) return { success: false, error: 'Yetkisiz erişim.' };
 
@@ -413,6 +414,7 @@ export async function importTextMenuAction(businessId: string, text: string) {
       let category = await prisma.category.findFirst({
         where: {
           businessId,
+          menuId: menuId || null,
           name: group.categoryName
         }
       });
@@ -422,6 +424,7 @@ export async function importTextMenuAction(businessId: string, text: string) {
         category = await prisma.category.create({
           data: {
             businessId,
+            menuId: menuId || null,
             name: group.categoryName,
             sortOrder: count,
           }
@@ -655,7 +658,8 @@ export async function saveEasyMenuAction(
       price: number | null;
       description: string;
     }[];
-  }[]
+  }[],
+  menuId?: string | null
 ) {
   const owner = await verifyBusinessOwnership(businessId);
   if (!owner) return { success: false, error: 'Yetkisiz erişim.' };
@@ -667,6 +671,7 @@ export async function saveEasyMenuAction(
       let category = await prisma.category.findFirst({
         where: {
           businessId,
+          menuId: menuId || null,
           name: group.name.trim()
         }
       });
@@ -676,6 +681,7 @@ export async function saveEasyMenuAction(
         category = await prisma.category.create({
           data: {
             businessId,
+            menuId: menuId || null,
             name: group.name.trim(),
             sortOrder: count,
           }

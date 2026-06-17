@@ -12,32 +12,73 @@ export default async function PublicMenuPage(
 ) {
   const { slug } = await props.params;
 
-  // Fetch business, subscription status and plan parameters
-  const business = await prisma.business.findUnique({
-    where: { slug },
+  // 1. Look up Branch first
+  const branch = await prisma.branch.findUnique({
+    where: { slug, isActive: true },
     include: {
-      subscription: {
+      business: {
         include: {
-          plan: true,
+          subscription: {
+            include: {
+              plan: true,
+            },
+          },
         },
       },
-      categories: {
+      menu: {
         include: {
-          products: {
-            where: { isActive: true },
+          categories: {
+            include: {
+              products: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' },
+              },
+            },
             orderBy: { sortOrder: 'asc' },
           },
         },
-        orderBy: { sortOrder: 'asc' },
       },
     },
   });
 
-  if (!business) {
-    notFound();
+  let business: any = null;
+  let categories: any[] = [];
+  let isBranch = false;
+
+  if (branch) {
+    business = branch.business;
+    categories = branch.menu.categories;
+    isBranch = true;
+  } else {
+    // Fallback: look up Business by slug directly (Eski tek menü sistemi)
+    const dbBusiness = await prisma.business.findUnique({
+      where: { slug },
+      include: {
+        subscription: {
+          include: {
+            plan: true,
+          },
+        },
+        categories: {
+          include: {
+            products: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
+    });
+
+    if (!dbBusiness) {
+      notFound();
+    }
+    business = dbBusiness;
+    categories = dbBusiness.categories;
   }
 
-  // 1. Security check: Business status must be ACTIVE
+  // 2. Security check: Business status must be ACTIVE
   if (business.status !== 'ACTIVE') {
     return (
       <div className="bg-zinc-950 text-zinc-100 min-h-screen flex items-center justify-center p-6 text-center font-sans">
@@ -52,7 +93,7 @@ export default async function PublicMenuPage(
     );
   }
 
-  // 2. Security check: Business must have an active subscription package
+  // 3. Security check: Business must have an active subscription package
   const subscription = business.subscription;
   if (!subscription || subscription.status !== 'ACTIVE') {
     return (
@@ -68,7 +109,7 @@ export default async function PublicMenuPage(
     );
   }
 
-  // 3. Increment Visitor Statistics Log for the Dashboard Graph
+  // 4. Increment Visitor Statistics Log for the Dashboard Graph
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -104,7 +145,7 @@ export default async function PublicMenuPage(
   return (
     <QrMenu
       business={{
-        name: business.name,
+        name: branch ? branch.name : business.name,
         description: business.description,
         whatsappNumber: business.whatsappNumber,
         showCalories: business.showCalories,
@@ -116,13 +157,13 @@ export default async function PublicMenuPage(
         themeId: business.themeId,
         openingHours: business.openingHours,
         serviceType: business.serviceType,
-        address: business.address,
-        instagramUrl: business.instagramUrl,
+        address: branch ? (branch.address || business.address) : business.address,
+        instagramUrl: branch ? (branch.instagramUrl || business.instagramUrl) : business.instagramUrl,
         locationUrl: business.locationUrl,
-        reviewsUrl: business.reviewsUrl,
-        slug: business.slug,
+        reviewsUrl: branch ? (branch.googleReviewUrl || business.reviewsUrl) : business.reviewsUrl,
+        slug: branch ? branch.slug : business.slug,
       }}
-      categories={business.categories}
+      categories={categories}
       hasWhatsAppOrder={plan.hasWhatsAppOrder}
       hasNutrients={plan.hasNutrients}
       viewOnly={!settings.orderingEnabled}

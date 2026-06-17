@@ -50,6 +50,8 @@ model Business {
   customAnthropicKey String?
   customAiProvider String     @default("openai")
   categories     Category[]
+  menus          Menu[]
+  branches       Branch[]
   subscription   Subscription?
   visitorLogs    VisitorLog[]
   createdAt      DateTime     @default(now())
@@ -59,10 +61,46 @@ model Business {
   @@index([slug])
 }
 
+model Menu {
+  id         String     @id @default(uuid())
+  businessId String
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String
+  categories Category[]
+  branches   Branch[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([businessId])
+}
+
+model Branch {
+  id              String   @id @default(uuid())
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  menuId          String
+  menu            Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String   @unique
+  address         String?
+  phone           String?
+  googleReviewUrl String?
+  instagramUrl    String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([menuId])
+  @@index([slug])
+}
+
 model Category {
   id               String    @id @default(uuid())
   businessId       String
   business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  menuId           String?
+  menu             Menu?     @relation(fields: [menuId], references: [id], onDelete: Cascade)
   name             String
   sortOrder        Int       @default(0)
   categoryImageUrl String?   // Optional cover image for the category card
@@ -71,6 +109,7 @@ model Category {
   updatedAt        DateTime  @updatedAt
 
   @@index([businessId])
+  @@index([menuId])
 }
 
 model Product {
