@@ -70,6 +70,7 @@ export default async function MenuPage() {
         hasAI={hasAI}
         hasNutrients={hasNutrients}
         hasWhatsApp={hasWhatsApp}
+        dbGalleryImages={await prisma.commonGalleryImage.findMany()}
       />
     </div>
   );

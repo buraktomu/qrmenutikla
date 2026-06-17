@@ -39,10 +39,18 @@ export default async function ProfilePage() {
   const activePlanId = business.subscription?.planId || 'starter';
   const hasThemeSelectionLimit = activePlanId === 'starter';
 
-  // Safe fallbacks for customOpenAiKey and useOwnApiKey
-  const decryptedKey = (business as any).customOpenAiKey ? decrypt((business as any).customOpenAiKey) : '';
-  const maskedKey = decryptedKey ? maskApiKey(decryptedKey) : '';
+  // Safe fallbacks for custom API keys and provider
+  const decryptedOpenai = (business as any).customOpenAiKey ? decrypt((business as any).customOpenAiKey) : '';
+  const maskedOpenai = decryptedOpenai ? maskApiKey(decryptedOpenai) : '';
+
+  const decryptedGemini = (business as any).customGeminiKey ? decrypt((business as any).customGeminiKey) : '';
+  const maskedGemini = decryptedGemini ? maskApiKey(decryptedGemini) : '';
+
+  const decryptedAnthropic = (business as any).customAnthropicKey ? decrypt((business as any).customAnthropicKey) : '';
+  const maskedAnthropic = decryptedAnthropic ? maskApiKey(decryptedAnthropic) : '';
+
   const useOwnApiKey = (business as any).useOwnApiKey ?? false;
+  const customAiProvider = (business as any).customAiProvider || 'openai';
 
   return (
     <div className="flex flex-col gap-6 text-black">
@@ -75,7 +83,10 @@ export default async function ProfilePage() {
           locationUrl: business.locationUrl,
           reviewsUrl: business.reviewsUrl,
           useOwnApiKey: useOwnApiKey,
-          customOpenAiKey: maskedKey,
+          customOpenAiKey: maskedOpenai,
+          customGeminiKey: maskedGemini,
+          customAnthropicKey: maskedAnthropic,
+          customAiProvider: customAiProvider,
         }}
         hasThemeSelectionLimit={hasThemeSelectionLimit}
       />

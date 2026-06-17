@@ -46,6 +46,9 @@ model Business {
   reviewsUrl     String?
   useOwnApiKey    Boolean      @default(false)
   customOpenAiKey String?
+  customGeminiKey String?
+  customAnthropicKey String?
+  customAiProvider String     @default("openai")
   categories     Category[]
   subscription   Subscription?
   visitorLogs    VisitorLog[]
@@ -146,6 +149,9 @@ model PlatformSetting {
   aiEnabled       Boolean  @default(true) // Master switch for all AI features
   orderingEnabled Boolean  @default(true) // Master switch for ordering / waiter-call
   openaiApiKey    String?
+  geminiApiKey    String?
+  anthropicApiKey String?
+  aiProvider      String   @default("openai")
   aiModel         String   @default("gpt-4o-mini")
   maxTokens       Int      @default(500)
   temperature     Float    @default(0.7)

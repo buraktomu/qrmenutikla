@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { encrypt } from '@/lib/encryption';
+import { cleanToRelativePath } from '@/lib/imageUtils';
 
 const businessUpdateSchema = z.object({
   name: z.string().min(2, 'İşletme adı en az 2 karakter olmalıdır.'),
@@ -36,6 +37,9 @@ const businessUpdateSchema = z.object({
   reviewsUrl: z.string().optional(),
   useOwnApiKey: z.boolean().default(false),
   customOpenAiKey: z.string().nullable().optional(),
+  customGeminiKey: z.string().nullable().optional(),
+  customAnthropicKey: z.string().nullable().optional(),
+  customAiProvider: z.string().default('openai'),
 });
 
 export async function updateBusinessSettings(
@@ -60,6 +64,9 @@ export async function updateBusinessSettings(
     reviewsUrl?: string;
     useOwnApiKey?: boolean;
     customOpenAiKey?: string | null;
+    customGeminiKey?: string | null;
+    customAnthropicKey?: string | null;
+    customAiProvider?: string;
   }
 ) {
   const session = await auth();
@@ -102,15 +109,31 @@ export async function updateBusinessSettings(
     reviewsUrl,
     useOwnApiKey,
     customOpenAiKey,
+    customGeminiKey,
+    customAnthropicKey,
+    customAiProvider,
   } = validation.data;
 
   try {
-    let finalApiKeyEncrypted = business?.customOpenAiKey || null;
-
+    let finalOpenai = business?.customOpenAiKey || null;
     if (customOpenAiKey === '') {
-      finalApiKeyEncrypted = null;
+      finalOpenai = null;
     } else if (customOpenAiKey && !customOpenAiKey.includes('****')) {
-      finalApiKeyEncrypted = encrypt(customOpenAiKey);
+      finalOpenai = encrypt(customOpenAiKey);
+    }
+
+    let finalGemini = business?.customGeminiKey || null;
+    if (customGeminiKey === '') {
+      finalGemini = null;
+    } else if (customGeminiKey && !customGeminiKey.includes('****')) {
+      finalGemini = encrypt(customGeminiKey);
+    }
+
+    let finalAnthropic = business?.customAnthropicKey || null;
+    if (customAnthropicKey === '') {
+      finalAnthropic = null;
+    } else if (customAnthropicKey && !customAnthropicKey.includes('****')) {
+      finalAnthropic = encrypt(customAnthropicKey);
     }
 
     await prisma.business.update({
@@ -122,9 +145,9 @@ export async function updateBusinessSettings(
         whatsappNumber,
         showCalories,
         allowOrders,
-        logoUrl,
+        logoUrl: cleanToRelativePath(logoUrl),
         coverVideoUrl,
-        coverImageUrl,
+        coverImageUrl: cleanToRelativePath(coverImageUrl),
         coverOpacity,
         themeId,
         description,
@@ -134,7 +157,10 @@ export async function updateBusinessSettings(
         locationUrl: locationUrl || null,
         reviewsUrl: reviewsUrl || null,
         useOwnApiKey,
-        customOpenAiKey: finalApiKeyEncrypted,
+        customOpenAiKey: finalOpenai,
+        customGeminiKey: finalGemini,
+        customAnthropicKey: finalAnthropic,
+        customAiProvider,
       },
     });
 

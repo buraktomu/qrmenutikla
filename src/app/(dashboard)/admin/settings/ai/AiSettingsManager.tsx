@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ToastProvider';
 import { updatePlatformAiSettings, testOpenAiConnectionAction } from '@/app/actions/ai-settings';
 import { Sparkles, Key, Cpu, HelpCircle, Save, CheckCircle2, XCircle } from 'lucide-react';
@@ -9,16 +9,40 @@ type AiSettingsManagerProps = {
   initialSettings: {
     aiEnabled: boolean;
     openaiApiKey: string;
+    geminiApiKey: string;
+    anthropicApiKey: string;
+    aiProvider: string;
     aiModel: string;
     maxTokens: number;
     temperature: number;
   };
 };
 
+const PROVIDER_MODELS = {
+  openai: [
+    { value: 'gpt-4o-mini', label: 'gpt-4o-mini (Önerilen - Hızlı & Ekonomik)' },
+    { value: 'gpt-4o', label: 'gpt-4o (Gelişmiş & Yüksek Performans)' },
+    { value: 'gpt-3.5-turbo', label: 'gpt-3.5-turbo (Eski Model)' },
+  ],
+  gemini: [
+    { value: 'gemini-2.5-flash', label: 'gemini-2.5-flash (Hızlı & Yetenekli)' },
+    { value: 'gemini-2.5-pro', label: 'gemini-2.5-pro (Karmaşık Görevler)' },
+    { value: 'gemini-1.5-flash', label: 'gemini-1.5-flash (Eski Model)' },
+  ],
+  anthropic: [
+    { value: 'claude-3-5-sonnet-20241022', label: 'claude-3-5-sonnet (En Yetenekli)' },
+    { value: 'claude-3-5-haiku-20241022', label: 'claude-3-5-haiku (Hızlı & Ekonomik)' },
+    { value: 'claude-3-opus-20240229', label: 'claude-3-opus (Maksimum Performans)' },
+  ],
+};
+
 export default function AiSettingsManager({ initialSettings }: AiSettingsManagerProps) {
   const { showToast } = useToast();
   const [aiEnabled, setAiEnabled] = useState(initialSettings.aiEnabled);
+  const [aiProvider, setAiProvider] = useState(initialSettings.aiProvider || 'openai');
   const [openaiApiKey, setOpenaiApiKey] = useState(initialSettings.openaiApiKey);
+  const [geminiApiKey, setGeminiApiKey] = useState(initialSettings.geminiApiKey || '');
+  const [anthropicApiKey, setAnthropicApiKey] = useState(initialSettings.anthropicApiKey || '');
   const [aiModel, setAiModel] = useState(initialSettings.aiModel);
   const [maxTokens, setMaxTokens] = useState(initialSettings.maxTokens);
   const [temperature, setTemperature] = useState(initialSettings.temperature);
@@ -27,9 +51,20 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Automatically adjust model if active provider changes and model doesn't match
+  useEffect(() => {
+    const validModels = PROVIDER_MODELS[aiProvider as keyof typeof PROVIDER_MODELS] || [];
+    if (!validModels.some((m) => m.value === aiModel)) {
+      setAiModel(validModels[0]?.value || '');
+    }
+  }, [aiProvider, aiModel]);
+
   const isDirty =
     aiEnabled !== initialSettings.aiEnabled ||
+    aiProvider !== initialSettings.aiProvider ||
     openaiApiKey !== initialSettings.openaiApiKey ||
+    geminiApiKey !== (initialSettings.geminiApiKey || '') ||
+    anthropicApiKey !== (initialSettings.anthropicApiKey || '') ||
     aiModel !== initialSettings.aiModel ||
     maxTokens !== initialSettings.maxTokens ||
     temperature !== initialSettings.temperature;
@@ -38,7 +73,10 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
     setLoading(true);
     const res = await updatePlatformAiSettings({
       aiEnabled,
+      aiProvider,
       openaiApiKey,
+      geminiApiKey,
+      anthropicApiKey,
       aiModel,
       maxTokens: Number(maxTokens),
       temperature: Number(temperature),
@@ -46,7 +84,6 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
 
     if (res.success) {
       showToast('Yapay zeka sistem ayarları kaydedildi.', 'success');
-      // Invalidate test results when saved
       setTestResult(null);
     } else {
       showToast(res.error || 'Ayarlar kaydedilemedi.', 'error');
@@ -55,14 +92,27 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
   };
 
   const handleTestConnection = async () => {
-    if (!openaiApiKey) {
-      showToast('Lütfen önce bir API Anahtarı girin.', 'error');
+    let keyToTest = '';
+    if (aiProvider === 'openai') keyToTest = openaiApiKey;
+    else if (aiProvider === 'gemini') keyToTest = geminiApiKey;
+    else if (aiProvider === 'anthropic') keyToTest = anthropicApiKey;
+
+    if (!keyToTest) {
+      showToast('Lütfen önce aktif sağlayıcı için bir API Anahtarı girin.', 'error');
       return;
     }
+
     setTesting(true);
     setTestResult(null);
 
-    const res = await testOpenAiConnectionAction(openaiApiKey, aiModel, 'platform');
+    const res = await testOpenAiConnectionAction(
+      keyToTest,
+      aiModel,
+      'platform',
+      undefined,
+      aiProvider as 'openai' | 'gemini' | 'anthropic'
+    );
+
     if (res.success) {
       setTestResult({
         success: true,
@@ -109,49 +159,106 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
       {/* Main Configurations Card */}
       <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 flex flex-col gap-5">
         
-        {/* API Key */}
+        {/* Provider Selection */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-bold text-black flex items-center gap-1.5">
-            <Key className="w-3.5 h-3.5 text-stone-500" />
-            OpenAI API Anahtarı
+            <Cpu className="w-3.5 h-3.5 text-stone-500" />
+            Aktif Yapay Zeka Sağlayıcısı (Provider)
           </label>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            value={aiProvider}
+            onChange={(e) => setAiProvider(e.target.value)}
+            className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500 text-black font-bold"
+          >
+            <option value="openai">OpenAI</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="anthropic">Anthropic Claude</option>
+          </select>
+        </div>
+
+        <div className="h-px bg-stone-100 w-full my-1" />
+
+        {/* API Keys inputs */}
+        <div className="flex flex-col gap-4">
+          <h4 className="text-xs font-black text-black">API Anahtarları (Platform Fallback)</h4>
+          
+          {/* OpenAI Key */}
+          <div className="flex flex-col gap-2 pl-2 border-l-2 border-stone-150">
+            <label className="text-xs font-bold text-black flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-stone-500" />
+              OpenAI API Anahtarı
+            </label>
             <input
               type="text"
               value={openaiApiKey}
               onChange={(e) => setOpenaiApiKey(e.target.value)}
               placeholder="sk-..."
-              className="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500 text-black"
             />
+          </div>
+
+          {/* Gemini Key */}
+          <div className="flex flex-col gap-2 pl-2 border-l-2 border-stone-150">
+            <label className="text-xs font-bold text-black flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-stone-500" />
+              Gemini API Anahtarı
+            </label>
+            <input
+              type="text"
+              value={geminiApiKey}
+              onChange={(e) => setGeminiApiKey(e.target.value)}
+              placeholder="AIzaSy..."
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500 text-black"
+            />
+          </div>
+
+          {/* Anthropic Key */}
+          <div className="flex flex-col gap-2 pl-2 border-l-2 border-stone-150">
+            <label className="text-xs font-bold text-black flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-stone-500" />
+              Anthropic API Anahtarı
+            </label>
+            <input
+              type="text"
+              value={anthropicApiKey}
+              onChange={(e) => setAnthropicApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500 text-black"
+            />
+          </div>
+        </div>
+
+        <div className="h-px bg-stone-100 w-full my-1" />
+
+        {/* Connection Testing section */}
+        <div className="bg-stone-50 p-4 rounded-xl border border-stone-150 flex flex-col gap-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-stone-700">Aktif Sağlayıcı Bağlantı Testi ({aiProvider.toUpperCase()})</span>
             <button
               type="button"
               onClick={handleTestConnection}
-              disabled={testing || !openaiApiKey}
-              className="px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 text-xs font-black text-stone-700 transition-colors shrink-0 disabled:opacity-50"
+              disabled={testing}
+              className="px-4 py-2 rounded-xl bg-white border border-stone-200 hover:bg-stone-100 text-xs font-black text-stone-700 transition-colors shrink-0 disabled:opacity-50"
             >
               {testing ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}
             </button>
           </div>
-          <p className="text-[10px] text-stone-500 font-medium leading-relaxed">
-            Buraya gireceğiniz API anahtarı veritabanında şifrelenmiş (AES-256) olarak saklanır. Maskeli gösterim aktif durumdadır.
-          </p>
-        </div>
 
-        {/* Test Result Alert Banner */}
-        {testResult && (
-          <div className={`p-4 rounded-xl border text-xs font-bold flex items-start gap-2.5 ${
-            testResult.success 
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
-              : 'bg-red-50 border-red-200 text-red-800'
-          }`}>
-            {testResult.success ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-            ) : (
-              <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-            )}
-            <span>{testResult.message}</span>
-          </div>
-        )}
+          {testResult && (
+            <div className={`p-4 rounded-xl border text-xs font-bold flex items-start gap-2.5 ${
+              testResult.success 
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}>
+              {testResult.success ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              )}
+              <span>{testResult.message}</span>
+            </div>
+          )}
+        </div>
 
         <div className="h-px bg-stone-100 w-full my-1" />
 
@@ -164,11 +271,13 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
           <select
             value={aiModel}
             onChange={(e) => setAiModel(e.target.value)}
-            className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+            className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500 text-black font-bold"
           >
-            <option value="gpt-4o-mini">gpt-4o-mini (Önerilen - Hızlı & Ekonomik)</option>
-            <option value="gpt-4o">gpt-4o (Gelişmiş & Yüksek Performans)</option>
-            <option value="gpt-3.5-turbo">gpt-3.5-turbo (Eski Model)</option>
+            {(PROVIDER_MODELS[aiProvider as keyof typeof PROVIDER_MODELS] || []).map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -179,7 +288,7 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-black flex items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5 text-stone-500" />
-              Maksimum Jetton (maxTokens)
+              Maksimum Jeton (maxTokens)
             </label>
             <input
               type="number"
@@ -187,7 +296,7 @@ export default function AiSettingsManager({ initialSettings }: AiSettingsManager
               onChange={(e) => setMaxTokens(parseInt(e.target.value) || 0)}
               min="1"
               max="4096"
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-indigo-500 text-black font-semibold"
             />
           </div>
 

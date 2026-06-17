@@ -8,9 +8,15 @@ import {
   generateProductDescription,
   predictCaloriesAndMacros,
   suggestProductCategory,
-  generateCampaignText
+  generateCampaignText,
+  getAIConfig,
+  callVisionAI,
+  supportsVision
 } from '@/lib/openai';
+import fs from 'fs/promises';
+import path from 'path';
 import { getPlatformSettings } from '@/lib/settings';
+import { cleanToRelativePath } from '@/lib/imageUtils';
 
 const AI_DISABLED_MSG = 'Yapay zeka özelliği yönetici tarafından geçici olarak kapatılmıştır.';
 
@@ -125,7 +131,7 @@ export async function updateCategory(businessId: string, categoryId: string, nam
   try {
     await prisma.category.update({
       where: { id: categoryId, businessId },
-      data: { name, categoryImageUrl: categoryImageUrl ?? null },
+      data: { name, categoryImageUrl: cleanToRelativePath(categoryImageUrl) ?? null },
     });
 
     revalidatePath('/dashboard/menu');
@@ -207,7 +213,7 @@ export async function createProduct(businessId: string, categoryId: string, data
         name: data.name,
         price: data.price,
         description: data.description,
-        imageUrl: data.imageUrl,
+        imageUrl: cleanToRelativePath(data.imageUrl),
         isCommonImage: data.isCommonImage,
         commonImageKey: data.commonImageKey,
         calories: data.calories,
@@ -249,7 +255,7 @@ export async function updateProduct(businessId: string, categoryId: string, prod
         name: data.name,
         price: data.price,
         description: data.description,
-        imageUrl: data.imageUrl,
+        imageUrl: cleanToRelativePath(data.imageUrl),
         isCommonImage: data.isCommonImage,
         commonImageKey: data.commonImageKey,
         calories: data.calories,
@@ -349,5 +355,363 @@ export async function getAICampaign(productName: string, discount: number) {
     return { success: true, result: campaign };
   } catch (error) {
     return { success: false, error: 'Kampanya metni oluşturulamadı.' };
+  }
+}
+
+/**
+ * Parses quick text content to add categories and products.
+ */
+export async function importTextMenuAction(businessId: string, text: string) {
+  const owner = await verifyBusinessOwnership(businessId);
+  if (!owner) return { success: false, error: 'Yetkisiz erişim.' };
+
+  if (!text.trim()) return { success: false, error: 'Lütfen menü metnini girin.' };
+
+  try {
+    const lines = text.split('\n');
+    let currentCategoryName = '';
+    
+    const parsedData: { categoryName: string; products: { name: string; price: number; description: string }[] }[] = [];
+
+    for (let line of lines) {
+      line = line.trim();
+      if (!line) continue;
+
+      if (line.startsWith('-')) {
+        if (!currentCategoryName) {
+          currentCategoryName = 'Genel';
+        }
+
+        const cleanLine = line.substring(1).trim();
+        const parts = cleanLine.split('|').map(p => p.trim());
+        const name = parts[0] || '';
+        if (!name) continue;
+
+        let price = 0;
+        if (parts[1]) {
+          const rawPrice = parts[1].replace(/[^\d.,]/g, '').replace(',', '.');
+          price = parseFloat(rawPrice) || 0;
+        }
+
+        const description = parts[2] || '';
+
+        let catGroup = parsedData.find(g => g.categoryName.toLowerCase() === currentCategoryName.toLowerCase());
+        if (!catGroup) {
+          catGroup = { categoryName: currentCategoryName, products: [] };
+          parsedData.push(catGroup);
+        }
+        
+        if (!catGroup.products.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+          catGroup.products.push({ name, price, description });
+        }
+      } else {
+        currentCategoryName = line;
+      }
+    }
+
+    for (const group of parsedData) {
+      let category = await prisma.category.findFirst({
+        where: {
+          businessId,
+          name: group.categoryName
+        }
+      });
+
+      if (!category) {
+        const count = await prisma.category.count({ where: { businessId } });
+        category = await prisma.category.create({
+          data: {
+            businessId,
+            name: group.categoryName,
+            sortOrder: count,
+          }
+        });
+      }
+
+      for (const prod of group.products) {
+        const existingProd = await prisma.product.findFirst({
+          where: {
+            categoryId: category.id,
+            name: prod.name
+          }
+        });
+
+        if (!existingProd) {
+          const count = await prisma.product.count({ where: { categoryId: category.id } });
+          await prisma.product.create({
+            data: {
+              categoryId: category.id,
+              name: prod.name,
+              price: prod.price,
+              description: prod.description,
+              isActive: true,
+              sortOrder: count,
+            }
+          });
+        }
+      }
+    }
+
+    revalidatePath('/dashboard/menu');
+    return { success: true };
+  } catch (err: any) {
+    console.error('importTextMenuAction error:', err);
+    return { success: false, error: err.message || 'Metin işlenirken hata oluştu.' };
+  }
+}
+
+/**
+ * OCR / Vision based extraction from menu photos.
+ */
+export async function parseMenuFromPhotosAction(businessId: string, imageUrls: string[]) {
+  const owner = await verifyBusinessOwnership(businessId);
+  if (!owner) return { success: false, error: 'Yetkisiz erişim.' };
+
+  if (!imageUrls || imageUrls.length === 0) {
+    return { success: false, error: 'Lütfen en az bir menü fotoğrafı yükleyin.' };
+  }
+
+  try {
+    const config = await getAIConfig(businessId);
+    if (!config || !config.apiKey) {
+      return { success: false, error: 'AI API anahtarı tanımlı değil.' };
+    }
+
+    if (!supportsVision(config.provider, config.model)) {
+      return { success: false, error: 'Seçili AI modeli görsel okuma desteklemiyor.' };
+    }
+
+    const imagesData: { mimeType: string; base64: string }[] = [];
+    let imageBuffer: Buffer | null = null;
+
+    for (const imgUrl of imageUrls) {
+      if (!imgUrl) continue;
+      const localPath = path.join(process.cwd(), 'public', imgUrl);
+      const buffer = await fs.readFile(localPath);
+      if (!imageBuffer) {
+        imageBuffer = buffer;
+      }
+      const base64 = buffer.toString('base64');
+      
+      let mimeType = 'image/jpeg';
+      if (imgUrl.toLowerCase().endsWith('.png')) mimeType = 'image/png';
+      else if (imgUrl.toLowerCase().endsWith('.webp')) mimeType = 'image/webp';
+
+      imagesData.push({ mimeType, base64 });
+    }
+
+    const systemPrompt = `Bu bir restoran/kafe menü fotoğrafıdır. Görseldeki tüm kategori başlıklarını, ürün adlarını, fiyatları ve açıklamaları çıkar. Çok küçük yazıları da dikkatle oku. Sadece JSON döndür.
+
+Format:
+{
+  "categories": [
+    {
+      "name": "Kategori Adı",
+      "products": [
+        {
+          "name": "Ürün Adı",
+          "price": "120",
+          "description": "Açıklama veya boş string"
+        }
+      ]
+    }
+  ]
+}
+
+Kurallar:
+- Fiyat varsa sadece sayı olarak yaz.
+- TL, ₺ sembolünü kaldır.
+- Okuyamadığın ürünü uydurma.
+- Ürün adı net ama fiyat okunmuyorsa price boş string olsun.
+- JSON dışında hiçbir şey döndürme.
+- Markdown code block kullanma.`;
+
+    const userPrompt = 'Lütfen bu menü fotoğraflarından kategorileri ve ürünleri çıkarıp belirtilen formatta ve kurallara uygun olarak döndür.';
+    
+    const images = imagesData;
+    console.log("Images count:", images.length);
+    if (imageBuffer) {
+      console.log("Image size:", imageBuffer.length);
+    }
+
+    const { provider, model } = config;
+    let responseText = '';
+    let rawResponse: any = null;
+
+    try {
+      const result = await callVisionAI(systemPrompt, userPrompt, imagesData, config);
+      responseText = result.text;
+      rawResponse = result.rawResponse;
+    } catch (aiCallErr: any) {
+      console.error('OCR Vision call AI error:', aiCallErr);
+      return { success: false, error: aiCallErr.message || 'Fotoğraflar işlenirken yapay zeka hatası oluştu.' };
+    }
+
+    console.log("OCR provider:", provider);
+    console.log("OCR model:", model);
+    console.log("OCR raw response:", JSON.stringify(rawResponse, null, 2));
+
+    if (!responseText || !responseText.trim()) {
+      console.error(`OCR Error: AI text content is empty. Provider: ${provider}, Model: ${model}`);
+      return {
+        success: false,
+        error: 'AI yanıt verdi ancak metin içeriği boş geldi. Model veya provider ayarını kontrol edin.'
+      };
+    }
+
+    let cleanJson = responseText.trim();
+    // Clean response if AI wrapped it in markdown code blocks
+    cleanJson = cleanJson
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/, '')
+      .replace(/```$/, '')
+      .trim();
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(cleanJson);
+    } catch (parseErr) {
+      console.error('OCR JSON Parse Error. Original text was:', responseText, parseErr);
+      console.log("OCR Raw Text:", responseText);
+      return { success: false, error: 'Menü okunamadı, lütfen daha net fotoğraf yükleyin.' };
+    }
+
+    if (!parsed || !Array.isArray(parsed.categories)) {
+      console.error('OCR response does not match expected schema:', parsed);
+      console.log("OCR Raw Text:", responseText);
+      return { success: false, error: 'Menü okunamadı, lütfen daha net fotoğraf yükleyin.' };
+    }
+
+    // Merge duplicate categories/products and normalize prices to number | null
+    const merged: { name: string; products: Map<string, any> }[] = [];
+
+    for (const cat of parsed.categories) {
+      if (!cat || !cat.name) continue;
+      const catName = String(cat.name).trim();
+      if (!catName) continue;
+
+      let existingCat = merged.find((c) => c.name.toLowerCase() === catName.toLowerCase());
+      if (!existingCat) {
+        existingCat = { name: catName, products: new Map() };
+        merged.push(existingCat);
+      }
+
+      const products = cat.products || [];
+      for (const prod of products) {
+        if (!prod || !prod.name) continue;
+        const prodName = String(prod.name).trim();
+        if (!prodName) continue;
+
+        const prodNameLower = prodName.toLowerCase();
+        const existingProd = existingCat.products.get(prodNameLower);
+
+        let priceVal: number | null = null;
+        if (prod.price !== undefined && prod.price !== null && prod.price !== '') {
+          const cleanPrice = String(prod.price).replace(/[^\d.,]/g, '').replace(',', '.');
+          priceVal = parseFloat(cleanPrice);
+          if (isNaN(priceVal)) {
+            priceVal = null;
+          }
+        }
+
+        if (existingProd) {
+          if (existingProd.price === null && priceVal !== null) {
+            existingProd.price = priceVal;
+          }
+          if (!existingProd.description && prod.description) {
+            existingProd.description = prod.description;
+          }
+        } else {
+          existingCat.products.set(prodNameLower, {
+            name: prodName,
+            price: priceVal,
+            description: prod.description || '',
+          });
+        }
+      }
+    }
+
+    const mergedCategories = merged.map((c) => ({
+      name: c.name,
+      products: Array.from(c.products.values()),
+    }));
+
+    return { success: true, data: { categories: mergedCategories } };
+  } catch (err: any) {
+    console.error('parseMenuFromPhotosAction error:', err);
+    return { success: false, error: err.message || 'Fotoğraflar işlenirken yapay zeka hatası oluştu.' };
+  }
+}
+
+/**
+ * Saves easy menu categories and products.
+ */
+export async function saveEasyMenuAction(
+  businessId: string,
+  categories: {
+    name: string;
+    products: {
+      name: string;
+      price: number | null;
+      description: string;
+    }[];
+  }[]
+) {
+  const owner = await verifyBusinessOwnership(businessId);
+  if (!owner) return { success: false, error: 'Yetkisiz erişim.' };
+
+  try {
+    for (const group of categories) {
+      if (!group.name.trim()) continue;
+
+      let category = await prisma.category.findFirst({
+        where: {
+          businessId,
+          name: group.name.trim()
+        }
+      });
+
+      if (!category) {
+        const count = await prisma.category.count({ where: { businessId } });
+        category = await prisma.category.create({
+          data: {
+            businessId,
+            name: group.name.trim(),
+            sortOrder: count,
+          }
+        });
+      }
+
+      for (const prod of group.products) {
+        if (!prod.name.trim()) continue;
+
+        const existingProd = await prisma.product.findFirst({
+          where: {
+            categoryId: category.id,
+            name: prod.name.trim()
+          }
+        });
+
+        if (!existingProd) {
+          const count = await prisma.product.count({ where: { categoryId: category.id } });
+          await prisma.product.create({
+            data: {
+              categoryId: category.id,
+              name: prod.name.trim(),
+              price: prod.price || 0,
+              description: prod.description || '',
+              isActive: true,
+              sortOrder: count,
+            }
+          });
+        }
+      }
+    }
+
+    revalidatePath('/dashboard/menu');
+    return { success: true };
+  } catch (error: any) {
+    console.error('saveEasyMenuAction error:', error);
+    return { success: false, error: error.message || 'Kaydetme işlemi sırasında hata oluştu.' };
   }
 }

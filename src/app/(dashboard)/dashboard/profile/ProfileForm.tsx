@@ -42,6 +42,9 @@ type ProfileFormProps = {
     reviewsUrl: string | null;
     useOwnApiKey: boolean;
     customOpenAiKey: string;
+    customGeminiKey: string;
+    customAnthropicKey: string;
+    customAiProvider: string;
   };
   hasThemeSelectionLimit: boolean;
 };
@@ -74,6 +77,9 @@ export default function ProfileForm({ business }: ProfileFormProps) {
   const [reviewsUrl, setReviewsUrl] = useState(business.reviewsUrl || '');
   const [useOwnApiKey, setUseOwnApiKey] = useState(business.useOwnApiKey || false);
   const [customOpenAiKey, setCustomOpenAiKey] = useState(business.customOpenAiKey || '');
+  const [customGeminiKey, setCustomGeminiKey] = useState(business.customGeminiKey || '');
+  const [customAnthropicKey, setCustomAnthropicKey] = useState(business.customAnthropicKey || '');
+  const [customAiProvider, setCustomAiProvider] = useState(business.customAiProvider || 'openai');
 
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -184,14 +190,34 @@ export default function ProfileForm({ business }: ProfileFormProps) {
   };
 
   const handleTestConnection = async () => {
-    if (!customOpenAiKey) {
-      showToast('Lütfen önce bir API Anahtarı girin.', 'error');
+    let keyToTest = '';
+    let testModel = 'gpt-4o-mini';
+    
+    if (customAiProvider === 'openai') {
+      keyToTest = customOpenAiKey;
+      testModel = 'gpt-4o-mini';
+    } else if (customAiProvider === 'gemini') {
+      keyToTest = customGeminiKey;
+      testModel = 'gemini-2.5-flash';
+    } else if (customAiProvider === 'anthropic') {
+      keyToTest = customAnthropicKey;
+      testModel = 'claude-3-5-haiku-20241022';
+    }
+
+    if (!keyToTest) {
+      showToast('Lütfen seçtiğiniz sağlayıcı için önce bir API Anahtarı girin.', 'error');
       return;
     }
     setTesting(true);
     setTestResult(null);
 
-    const res = await testOpenAiConnectionAction(customOpenAiKey, 'gpt-4o-mini', 'business', business.id);
+    const res = await testOpenAiConnectionAction(
+      keyToTest,
+      testModel,
+      'business',
+      business.id,
+      customAiProvider as 'openai' | 'gemini' | 'anthropic'
+    );
     if (res.success) {
       setTestResult({
         success: true,
@@ -236,6 +262,9 @@ export default function ProfileForm({ business }: ProfileFormProps) {
         reviewsUrl,
         useOwnApiKey,
         customOpenAiKey,
+        customGeminiKey,
+        customAnthropicKey,
+        customAiProvider,
       });
 
       if (res.success) {
@@ -587,30 +616,102 @@ export default function ProfileForm({ business }: ProfileFormProps) {
             </div>
 
             {useOwnApiKey && (
-              <div className="flex flex-col gap-3 mt-2 animate-fade-in">
+              <div className="flex flex-col gap-4 mt-2 animate-fade-in pl-3 border-l-2 border-stone-150">
+                {/* Custom Provider Selection */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-black flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-stone-500" />
-                    Özel OpenAI API Anahtarı
+                    <Cpu className="w-3.5 h-3.5 text-stone-500" />
+                    Yapay Zeka Sağlayıcısı
                   </label>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <input
-                      type="text"
-                      value={customOpenAiKey}
-                      onChange={(e) => setCustomOpenAiKey(e.target.value)}
-                      placeholder="sk-..."
-                      className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-stone-250 focus:border-indigo-500 text-xs font-semibold outline-none text-black"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleTestConnection}
-                      disabled={testing || !customOpenAiKey}
-                      className="px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-xs font-black text-stone-700 transition-colors shrink-0 disabled:opacity-50"
-                    >
-                      {testing ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}
-                    </button>
-                  </div>
+                  <select
+                    value={customAiProvider}
+                    onChange={(e) => setCustomAiProvider(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-stone-250 focus:border-indigo-500 text-xs font-semibold outline-none text-black font-bold"
+                  >
+                    <option value="openai">OpenAI</option>
+                    <option value="gemini">Google Gemini</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                  </select>
                 </div>
+
+                {/* API Key Input depending on provider */}
+                {customAiProvider === 'openai' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-black flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-stone-500" />
+                      Özel OpenAI API Anahtarı
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="text"
+                        value={customOpenAiKey}
+                        onChange={(e) => setCustomOpenAiKey(e.target.value)}
+                        placeholder="sk-..."
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-stone-250 focus:border-indigo-500 text-xs font-semibold outline-none text-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleTestConnection}
+                        disabled={testing || !customOpenAiKey}
+                        className="px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-xs font-black text-stone-700 transition-colors shrink-0 disabled:opacity-50"
+                      >
+                        {testing ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {customAiProvider === 'gemini' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-black flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-stone-500" />
+                      Özel Gemini API Anahtarı
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="text"
+                        value={customGeminiKey}
+                        onChange={(e) => setCustomGeminiKey(e.target.value)}
+                        placeholder="AIzaSy..."
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-stone-250 focus:border-indigo-500 text-xs font-semibold outline-none text-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleTestConnection}
+                        disabled={testing || !customGeminiKey}
+                        className="px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-xs font-black text-stone-700 transition-colors shrink-0 disabled:opacity-50"
+                      >
+                        {testing ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {customAiProvider === 'anthropic' && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-black flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-stone-500" />
+                      Özel Anthropic API Anahtarı
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <input
+                        type="text"
+                        value={customAnthropicKey}
+                        onChange={(e) => setCustomAnthropicKey(e.target.value)}
+                        placeholder="sk-ant-..."
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-stone-250 focus:border-indigo-500 text-xs font-semibold outline-none text-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleTestConnection}
+                        disabled={testing || !customAnthropicKey}
+                        className="px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-xs font-black text-stone-700 transition-colors shrink-0 disabled:opacity-50"
+                      >
+                        {testing ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {testResult && (
                   <div className={`p-4 rounded-xl border text-xs font-bold flex items-start gap-2.5 ${

@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { encrypt, decrypt } from '@/lib/encryption';
-import { OpenAI } from 'openai';
 import { z } from 'zod';
 import { maskApiKey } from '@/lib/maskApiKey';
 
@@ -12,6 +11,9 @@ import { maskApiKey } from '@/lib/maskApiKey';
 const platformAiSettingsSchema = z.object({
   aiEnabled: z.boolean(),
   openaiApiKey: z.string().nullable().optional(),
+  geminiApiKey: z.string().nullable().optional(),
+  anthropicApiKey: z.string().nullable().optional(),
+  aiProvider: z.string().default('openai'),
   aiModel: z.string().min(1, 'Model seçimi zorunludur.'),
   maxTokens: z.number().int().min(1, 'Max tokens 1 veya daha büyük olmalıdır.'),
   temperature: z.number().min(0).max(2, 'Temperature 0 ile 2 arasında olmalıdır.'),
@@ -20,8 +22,10 @@ const platformAiSettingsSchema = z.object({
 const businessAiSettingsSchema = z.object({
   useOwnApiKey: z.boolean(),
   customOpenAiKey: z.string().nullable().optional(),
+  customGeminiKey: z.string().nullable().optional(),
+  customAnthropicKey: z.string().nullable().optional(),
+  customAiProvider: z.string().default('openai'),
 });
-
 
 // Helper: Verify the user is a Super Admin
 async function verifyAdminRole() {
@@ -51,7 +55,7 @@ async function verifyBusinessOwnership(businessId: string) {
 }
 
 /**
- * Retrieves the platform AI settings. Returns settings with a masked API key.
+ * Retrieves the platform AI settings. Returns settings with masked API keys.
  */
 export async function getPlatformAiSettings() {
   const isAdmin = await verifyAdminRole();
@@ -65,19 +69,26 @@ export async function getPlatformAiSettings() {
     return {
       aiEnabled: true,
       openaiApiKey: '',
+      geminiApiKey: '',
+      anthropicApiKey: '',
+      aiProvider: 'openai',
       aiModel: 'gpt-4o-mini',
       maxTokens: 500,
       temperature: 0.7,
     };
   }
 
-  // Decrypt and mask
-  const decryptedKey = row.openaiApiKey ? decrypt(row.openaiApiKey) : '';
-  const maskedKey = decryptedKey ? maskApiKey(decryptedKey) : '';
+  // Decrypt and mask all keys
+  const decryptedOpenai = row.openaiApiKey ? decrypt(row.openaiApiKey) : '';
+  const decryptedGemini = row.geminiApiKey ? decrypt(row.geminiApiKey) : '';
+  const decryptedAnthropic = row.anthropicApiKey ? decrypt(row.anthropicApiKey) : '';
 
   return {
     aiEnabled: row.aiEnabled,
-    openaiApiKey: maskedKey,
+    openaiApiKey: decryptedOpenai ? maskApiKey(decryptedOpenai) : '',
+    geminiApiKey: decryptedGemini ? maskApiKey(decryptedGemini) : '',
+    anthropicApiKey: decryptedAnthropic ? maskApiKey(decryptedAnthropic) : '',
+    aiProvider: row.aiProvider || 'openai',
     aiModel: row.aiModel,
     maxTokens: row.maxTokens,
     temperature: row.temperature,
@@ -96,28 +107,54 @@ export async function updatePlatformAiSettings(data: any) {
     return { success: false, error: validation.error.issues[0].message };
   }
 
-  const { aiEnabled, openaiApiKey, aiModel, maxTokens, temperature } = validation.data;
+  const {
+    aiEnabled,
+    openaiApiKey,
+    geminiApiKey,
+    anthropicApiKey,
+    aiProvider,
+    aiModel,
+    maxTokens,
+    temperature
+  } = validation.data;
 
   try {
-    // Check if the api key was actually changed
     const existing = await prisma.platformSetting.findUnique({
       where: { id: 'global' },
     });
 
-    let finalApiKeyEncrypted = existing?.openaiApiKey || null;
-
+    // OpenAI Key resolution
+    let finalOpenaiKey = existing?.openaiApiKey || null;
     if (openaiApiKey === '') {
-      finalApiKeyEncrypted = null;
+      finalOpenaiKey = null;
     } else if (openaiApiKey && !openaiApiKey.includes('****')) {
-      // It's a new plain text key, encrypt it
-      finalApiKeyEncrypted = encrypt(openaiApiKey);
+      finalOpenaiKey = encrypt(openaiApiKey);
+    }
+
+    // Gemini Key resolution
+    let finalGeminiKey = existing?.geminiApiKey || null;
+    if (geminiApiKey === '') {
+      finalGeminiKey = null;
+    } else if (geminiApiKey && !geminiApiKey.includes('****')) {
+      finalGeminiKey = encrypt(geminiApiKey);
+    }
+
+    // Anthropic Key resolution
+    let finalAnthropicKey = existing?.anthropicApiKey || null;
+    if (anthropicApiKey === '') {
+      finalAnthropicKey = null;
+    } else if (anthropicApiKey && !anthropicApiKey.includes('****')) {
+      finalAnthropicKey = encrypt(anthropicApiKey);
     }
 
     await prisma.platformSetting.upsert({
       where: { id: 'global' },
       update: {
         aiEnabled,
-        openaiApiKey: finalApiKeyEncrypted,
+        openaiApiKey: finalOpenaiKey,
+        geminiApiKey: finalGeminiKey,
+        anthropicApiKey: finalAnthropicKey,
+        aiProvider,
         aiModel,
         maxTokens,
         temperature,
@@ -125,7 +162,10 @@ export async function updatePlatformAiSettings(data: any) {
       create: {
         id: 'global',
         aiEnabled,
-        openaiApiKey: finalApiKeyEncrypted,
+        openaiApiKey: finalOpenaiKey,
+        geminiApiKey: finalGeminiKey,
+        anthropicApiKey: finalAnthropicKey,
+        aiProvider,
         aiModel,
         maxTokens,
         temperature,
@@ -155,12 +195,16 @@ export async function getBusinessAiSettings(businessId: string) {
 
   if (!business) throw new Error('İşletme bulunamadı.');
 
-  const decryptedKey = business.customOpenAiKey ? decrypt(business.customOpenAiKey) : '';
-  const maskedKey = decryptedKey ? maskApiKey(decryptedKey) : '';
+  const decOpenai = business.customOpenAiKey ? decrypt(business.customOpenAiKey) : '';
+  const decGemini = business.customGeminiKey ? decrypt(business.customGeminiKey) : '';
+  const decAnthropic = business.customAnthropicKey ? decrypt(business.customAnthropicKey) : '';
 
   return {
     useOwnApiKey: business.useOwnApiKey,
-    customOpenAiKey: maskedKey,
+    customOpenAiKey: decOpenai ? maskApiKey(decOpenai) : '',
+    customGeminiKey: decGemini ? maskApiKey(decGemini) : '',
+    customAnthropicKey: decAnthropic ? maskApiKey(decAnthropic) : '',
+    customAiProvider: business.customAiProvider || 'openai',
   };
 }
 
@@ -176,7 +220,13 @@ export async function updateBusinessAiSettings(businessId: string, data: any) {
     return { success: false, error: validation.error.issues[0].message };
   }
 
-  const { useOwnApiKey, customOpenAiKey } = validation.data;
+  const {
+    useOwnApiKey,
+    customOpenAiKey,
+    customGeminiKey,
+    customAnthropicKey,
+    customAiProvider
+  } = validation.data;
 
   try {
     const business = await prisma.business.findUnique({
@@ -185,19 +235,38 @@ export async function updateBusinessAiSettings(businessId: string, data: any) {
 
     if (!business) return { success: false, error: 'İşletme bulunamadı.' };
 
-    let finalApiKeyEncrypted = business.customOpenAiKey || null;
-
+    // OpenAI key encryption
+    let finalOpenai = business.customOpenAiKey || null;
     if (customOpenAiKey === '') {
-      finalApiKeyEncrypted = null;
+      finalOpenai = null;
     } else if (customOpenAiKey && !customOpenAiKey.includes('****')) {
-      finalApiKeyEncrypted = encrypt(customOpenAiKey);
+      finalOpenai = encrypt(customOpenAiKey);
+    }
+
+    // Gemini key encryption
+    let finalGemini = business.customGeminiKey || null;
+    if (customGeminiKey === '') {
+      finalGemini = null;
+    } else if (customGeminiKey && !customGeminiKey.includes('****')) {
+      finalGemini = encrypt(customGeminiKey);
+    }
+
+    // Anthropic key encryption
+    let finalAnthropic = business.customAnthropicKey || null;
+    if (customAnthropicKey === '') {
+      finalAnthropic = null;
+    } else if (customAnthropicKey && !customAnthropicKey.includes('****')) {
+      finalAnthropic = encrypt(customAnthropicKey);
     }
 
     await prisma.business.update({
       where: { id: businessId },
       data: {
         useOwnApiKey,
-        customOpenAiKey: finalApiKeyEncrypted,
+        customOpenAiKey: finalOpenai,
+        customGeminiKey: finalGemini,
+        customAnthropicKey: finalAnthropic,
+        customAiProvider,
       },
     });
 
@@ -210,13 +279,14 @@ export async function updateBusinessAiSettings(businessId: string, data: any) {
 }
 
 /**
- * Connection test for OpenAI API Key.
+ * Universal connection test action supporting multiple providers.
  */
 export async function testOpenAiConnectionAction(
   submittedKey: string,
   model: string,
   context: 'platform' | 'business',
-  businessId?: string
+  businessId?: string,
+  provider: 'openai' | 'gemini' | 'anthropic' = 'openai'
 ) {
   let resolvedKey = submittedKey;
 
@@ -226,15 +296,23 @@ export async function testOpenAiConnectionAction(
       const settings = await prisma.platformSetting.findUnique({
         where: { id: 'global' },
       });
-      if (settings?.openaiApiKey) {
+      if (provider === 'openai' && settings?.openaiApiKey) {
         resolvedKey = decrypt(settings.openaiApiKey);
+      } else if (provider === 'gemini' && settings?.geminiApiKey) {
+        resolvedKey = decrypt(settings.geminiApiKey);
+      } else if (provider === 'anthropic' && settings?.anthropicApiKey) {
+        resolvedKey = decrypt(settings.anthropicApiKey);
       }
     } else if (context === 'business' && businessId) {
       const business = await prisma.business.findUnique({
         where: { id: businessId },
       });
-      if (business?.customOpenAiKey) {
+      if (provider === 'openai' && business?.customOpenAiKey) {
         resolvedKey = decrypt(business.customOpenAiKey);
+      } else if (provider === 'gemini' && business?.customGeminiKey) {
+        resolvedKey = decrypt(business.customGeminiKey);
+      } else if (provider === 'anthropic' && business?.customAnthropicKey) {
+        resolvedKey = decrypt(business.customAnthropicKey);
       }
     }
   }
@@ -244,15 +322,14 @@ export async function testOpenAiConnectionAction(
   }
 
   try {
-    const client = new OpenAI({ apiKey: resolvedKey });
-    await client.chat.completions.create({
-      model: model || 'gpt-4o-mini',
-      messages: [{ role: 'user', content: 'Ping' }],
-      max_tokens: 5,
-    });
+    const { testAiConnection } = await import('@/lib/openai');
+    const result = await testAiConnection(provider, resolvedKey, model);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
     return { success: true };
   } catch (error: any) {
-    console.error('OpenAI Connection Test Error:', error);
+    console.error('Connection Test Error:', error);
     return {
       success: false,
       error: error.message || 'API bağlantısı başarısız oldu.',

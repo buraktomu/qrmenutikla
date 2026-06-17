@@ -32,6 +32,7 @@ import {
   UploadCloud,
   Loader2
 } from 'lucide-react';
+import EasyMenuManager from './EasyMenuManager';
 
 type ProductType = {
   id: string;
@@ -62,6 +63,11 @@ type MenuManagerProps = {
   hasAI: boolean;
   hasNutrients: boolean;
   hasWhatsApp: boolean;
+  dbGalleryImages?: {
+    categoryKey: string;
+    title: string;
+    imageUrl: string;
+  }[];
 };
 
 function isVideoUrl(url: string | null | undefined): boolean {
@@ -137,10 +143,40 @@ export default function MenuManager({
   initialCategories, 
   hasAI, 
   hasNutrients, 
-  hasWhatsApp 
+  hasWhatsApp,
+  dbGalleryImages = []
 }: MenuManagerProps) {
   const { showToast } = useToast();
+
+  const combinedGallery = React.useMemo(() => {
+    const gallery: Record<string, { title: string; imageUrl: string }[]> = {};
+    
+    // Copy static gallery
+    Object.keys(COMMON_GALLERY).forEach((catKey) => {
+      gallery[catKey] = [...COMMON_GALLERY[catKey]];
+    });
+
+    // Merge database gallery
+    dbGalleryImages.forEach((img) => {
+      if (!img.imageUrl || !img.categoryKey) return;
+      if (!isImageUrl(img.imageUrl)) return;
+
+      const cat = img.categoryKey;
+      if (!gallery[cat]) {
+        gallery[cat] = [];
+      }
+      if (!gallery[cat].some((existing) => existing.imageUrl === img.imageUrl)) {
+        gallery[cat].push({
+          title: img.title,
+          imageUrl: img.imageUrl,
+        });
+      }
+    });
+
+    return gallery;
+  }, [dbGalleryImages]);
   const [categories, setCategories] = useState<CategoryType[]>(initialCategories);
+  const [activeManagerTab, setActiveManagerTab] = useState<'classic' | 'easy'>('classic');
   const [activeCategoryId, setActiveCategoryId] = useState<string>(
     initialCategories[0]?.id || ''
   );
@@ -166,6 +202,15 @@ export default function MenuManager({
   const [pImageType, setPImageType] = useState<'url' | 'common'>('url');
   const [pImageUrl, setPImageUrl] = useState('');
   const [pCommonKey, setPCommonKey] = useState('');
+  const selectedCommonImageUrl = React.useMemo(() => {
+    if (!pCommonKey) return null;
+    let foundUrl: string | null = null;
+    Object.keys(combinedGallery).forEach((catKey) => {
+      const found = combinedGallery[catKey].find((img) => img.imageUrl === pCommonKey);
+      if (found) foundUrl = found.imageUrl;
+    });
+    return foundUrl;
+  }, [pCommonKey, combinedGallery]);
   const [pCalories, setPCalories] = useState('');
   const [pProtein, setPProtein] = useState('');
   const [pCarbs, setPCarbs] = useState('');
@@ -342,7 +387,14 @@ export default function MenuManager({
       setPActive(prod.isActive);
       setPImageType(prod.isCommonImage ? 'common' : 'url');
       setPImageUrl(prod.imageUrl || '');
-      setPCommonKey(prod.commonImageKey || '');
+      let initialCommonKey = prod.commonImageKey || '';
+      if (initialCommonKey && !initialCommonKey.startsWith('http') && !initialCommonKey.startsWith('/uploads')) {
+        Object.keys(combinedGallery).forEach((catKey) => {
+          const found = combinedGallery[catKey].find((img) => img.title === initialCommonKey);
+          if (found) initialCommonKey = found.imageUrl;
+        });
+      }
+      setPCommonKey(initialCommonKey);
       setPCalories(prod.calories?.toString() || '');
       setPProtein(prod.protein?.toString() || '');
       setPCarbs(prod.carbs?.toString() || '');
@@ -371,12 +423,15 @@ export default function MenuManager({
     
     // Choose selected image url
     let resolvedImageUrl = pImageUrl;
+    let finalCommonKey = pCommonKey;
     if (pImageType === 'common' && pCommonKey) {
-      // Find matching stock URL
-      Object.keys(COMMON_GALLERY).forEach((catKey) => {
-        const found = COMMON_GALLERY[catKey].find((img) => img.title === pCommonKey);
-        if (found) resolvedImageUrl = found.imageUrl;
+      resolvedImageUrl = pCommonKey;
+      let matchedTitle = '';
+      Object.keys(combinedGallery).forEach((catKey) => {
+        const found = combinedGallery[catKey].find((img) => img.imageUrl === pCommonKey);
+        if (found) matchedTitle = found.title;
       });
+      finalCommonKey = matchedTitle || pCommonKey;
     }
 
     const payload = {
@@ -385,7 +440,7 @@ export default function MenuManager({
       description: pDesc,
       imageUrl: resolvedImageUrl,
       isCommonImage: pImageType === 'common',
-      commonImageKey: pCommonKey,
+      commonImageKey: finalCommonKey,
       calories: pCalories ? parseInt(pCalories) : null,
       protein: pProtein ? parseFloat(pProtein) : null,
       carbs: pCarbs ? parseFloat(pCarbs) : null,
@@ -493,7 +548,27 @@ export default function MenuManager({
   return (
     <div className="flex flex-col gap-6 text-black">
       
-      {/* Category Tabs Wrapper */}
+      {/* Tab Switcher */}
+      <div className="flex gap-2 p-1 bg-stone-100 rounded-xl border border-stone-250 w-fit text-xs font-black">
+        <button
+          onClick={() => setActiveManagerTab('classic')}
+          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 ${activeManagerTab === 'classic' ? 'bg-white text-black shadow-sm' : 'text-stone-600 hover:text-black'}`}
+        >
+          🗂️ Klasik Yönetim
+        </button>
+        <button
+          onClick={() => setActiveManagerTab('easy')}
+          className={`px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 ${activeManagerTab === 'easy' ? 'bg-white text-black shadow-sm' : 'text-stone-600 hover:text-black'}`}
+        >
+          ⚡ Kolay Menü Ekle
+        </button>
+      </div>
+
+      {activeManagerTab === 'easy' ? (
+        <EasyMenuManager businessId={businessId} onSuccess={() => window.location.reload()} />
+      ) : (
+        <>
+          {/* Category Tabs Wrapper */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-xl font-black text-black">Menü İçeriği</h2>
@@ -684,6 +759,8 @@ export default function MenuManager({
             İlk Kategoriyi Ekle
           </button>
         </div>
+      )}
+        </>
       )}
 
       {/* -------------------------------------------------------------
@@ -919,23 +996,38 @@ export default function MenuManager({
                     )}
                   </div>
                 ) : (
-                  <div className="relative">
-                    <select
-                      value={pCommonKey}
-                      onChange={(e) => setPCommonKey(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white text-xs outline-none text-black font-bold appearance-none"
-                    >
-                      <option value="">Ortak galeriden bir görsel seçin...</option>
-                      {Object.keys(COMMON_GALLERY).map((catKey) => (
-                        <optgroup key={catKey} label={catKey} className="bg-white text-black font-bold">
-                          {COMMON_GALLERY[catKey].map((img) => (
-                            <option key={img.title} value={img.title} className="text-black font-semibold">
-                              {catKey} - {img.title}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
+                  <div className="flex flex-col gap-2">
+                    <div className="relative">
+                      <select
+                        value={pCommonKey}
+                        onChange={(e) => setPCommonKey(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white text-xs outline-none text-black font-bold appearance-none"
+                      >
+                        <option value="">Ortak galeriden bir görsel seçin...</option>
+                        {Object.keys(combinedGallery).map((catKey) => (
+                          <optgroup key={catKey} label={catKey} className="bg-white text-black font-bold">
+                            {combinedGallery[catKey].map((img) => (
+                              <option key={img.imageUrl} value={img.imageUrl} className="text-black font-semibold">
+                                {catKey} - {img.title}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </div>
+                    {selectedCommonImageUrl && (
+                      <div className="relative w-full h-28 rounded-xl overflow-hidden border border-stone-200">
+                        <MediaDisplay src={selectedCommonImageUrl} alt="Ortak Görsel Önizleme" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setPCommonKey('')}
+                          className="absolute top-1.5 right-1.5 p-1.5 rounded-lg bg-white/90 border border-stone-200 text-red-600 hover:bg-red-50 transition-colors"
+                          title="Görseli kaldır"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

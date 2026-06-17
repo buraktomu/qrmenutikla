@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
+import { cleanToRelativePath } from '@/lib/imageUtils';
 
 // Helper: Verify the user is a Super Admin
 async function verifyAdminRole() {
@@ -174,7 +175,7 @@ export async function addGalleryImage(categoryKey: string, title: string, imageU
       data: {
         categoryKey,
         title,
-        imageUrl,
+        imageUrl: cleanToRelativePath(imageUrl) || '',
       },
     });
 
