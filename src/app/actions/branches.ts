@@ -13,6 +13,10 @@ const branchSchema = z.object({
   phone: z.string().optional().nullable(),
   googleReviewUrl: z.string().optional().nullable(),
   instagramUrl: z.string().optional().nullable(),
+  locationUrl: z.string().optional().nullable(),
+  coverVideoUrl: z.string().optional().nullable(),
+  slogan: z.string().optional().nullable(),
+  logoUrl: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
 });
 
@@ -63,6 +67,10 @@ export async function createBranchAction(businessId: string, data: any) {
         phone: data.phone || null,
         googleReviewUrl: data.googleReviewUrl || null,
         instagramUrl: data.instagramUrl || null,
+        locationUrl: data.locationUrl || null,
+        coverVideoUrl: data.coverVideoUrl || null,
+        slogan: data.slogan || null,
+        logoUrl: data.logoUrl || null,
         isActive: data.isActive ?? true,
       }
     });
@@ -107,6 +115,10 @@ export async function updateBranchAction(businessId: string, branchId: string, d
         phone: data.phone || null,
         googleReviewUrl: data.googleReviewUrl || null,
         instagramUrl: data.instagramUrl || null,
+        locationUrl: data.locationUrl || null,
+        coverVideoUrl: data.coverVideoUrl || null,
+        slogan: data.slogan || null,
+        logoUrl: data.logoUrl || null,
         isActive: data.isActive ?? true,
       }
     });

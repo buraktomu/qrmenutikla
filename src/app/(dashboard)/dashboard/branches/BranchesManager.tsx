@@ -12,6 +12,8 @@ import {
 import { 
   Store, 
   Plus, 
+  UploadCloud,
+  Trash2,
   Edit, 
   QrCode, 
   MapPin, 
@@ -36,6 +38,10 @@ type Branch = {
   phone: string | null;
   googleReviewUrl: string | null;
   instagramUrl: string | null;
+  locationUrl: string | null;
+  coverVideoUrl: string | null;
+  slogan: string | null;
+  logoUrl: string | null;
   isActive: boolean;
   menuId: string;
   menu: {
@@ -78,7 +84,160 @@ export default function BranchesManager({
   const [phone, setPhone] = useState('');
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
+  const [locationUrl, setLocationUrl] = useState('');
+  const [coverVideoUrl, setCoverVideoUrl] = useState('');
+  const [slogan, setSlogan] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
+
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoProgress, setLogoProgress] = useState<number | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState<number | null>(null);
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (file: File, target: 'logo' | 'video') => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload', true);
+
+    if (target === 'logo') {
+      setUploadingLogo(true);
+      setLogoProgress(0);
+    } else {
+      setUploadingVideo(true);
+      setVideoProgress(0);
+    }
+
+    const cleanup = () => {
+      if (target === 'logo') {
+        setUploadingLogo(false);
+        setLogoProgress(null);
+      } else {
+        setUploadingVideo(false);
+        setVideoProgress(null);
+      }
+    };
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        if (target === 'logo') setLogoProgress(percent);
+        else setVideoProgress(percent);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.url) {
+            if (target === 'logo') setLogoUrl(data.url);
+            else setCoverVideoUrl(data.url);
+            showToast('Dosya başarıyla yüklendi.', 'success');
+          } else {
+            showToast(data.error || 'Dosya yüklenemedi.', 'error');
+          }
+        } catch (e) {
+          showToast('Dosya yükleme hatası oluştu.', 'error');
+        }
+      } else {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          showToast(data.error || 'Dosya yüklenemedi.', 'error');
+        } catch {
+          showToast('Dosya yükleme hatası oluştu.', 'error');
+        }
+      }
+      cleanup();
+    };
+
+    xhr.onerror = () => {
+      showToast('Dosya yükleme hatası.', 'error');
+      cleanup();
+    };
+
+    const fd = new FormData();
+    fd.append('file', file);
+    xhr.send(fd);
+  };
+
+  const renderDropzone = (
+    target: 'logo' | 'video',
+    currentUrl: string,
+    uploading: boolean,
+    progress: number | null,
+    accept: string,
+    inputRef: React.RefObject<HTMLInputElement | null>,
+    placeholder: string
+  ) => {
+    return (
+      <div className="flex flex-col gap-2">
+        <div
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const f = e.dataTransfer.files?.[0];
+            if (f) handleFileUpload(f, target);
+          }}
+          onClick={() => inputRef.current?.click()}
+          className="border-2 border-dashed border-stone-200 hover:border-indigo-500 rounded-xl p-4 bg-stone-50/50 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2"
+        >
+          <input
+            type="file"
+            accept={accept}
+            ref={inputRef}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFileUpload(f, target);
+            }}
+            className="hidden"
+          />
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2 w-full">
+              <Loader2 className="w-6 h-6 text-indigo-650 animate-spin" />
+              {progress !== null && (
+                <div className="w-full max-w-[150px] bg-stone-200 border border-stone-250 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-indigo-650 h-full rounded-full transition-all duration-150"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              )}
+              <span className="text-[10px] text-indigo-600 font-bold">Yükleniyor... %{progress ?? 0}</span>
+            </div>
+          ) : (
+            <>
+              <UploadCloud className="w-6 h-6 text-stone-400" />
+              <span className="text-[11px] font-bold text-black">{placeholder}</span>
+              <span className="text-[9px] text-stone-400 font-semibold">Tıklayın veya sürükleyin</span>
+            </>
+          )}
+        </div>
+        {currentUrl && (
+          <div className="relative w-full h-24 rounded-xl overflow-hidden border border-stone-200 mt-1 flex items-center justify-center bg-stone-50">
+            {target === 'logo' ? (
+              <img src={currentUrl} alt="Şube Logosu" className="h-full object-contain p-2" />
+            ) : (
+              <video src={currentUrl} className="h-full w-full object-cover" controls muted playsInline />
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (target === 'logo') setLogoUrl('');
+                else setCoverVideoUrl('');
+              }}
+              className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-white/90 border border-stone-200 text-red-650 hover:bg-red-50 transition-colors shadow-sm"
+              title="Kaldır"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Inline Menu creation state
   const [showNewMenuInput, setShowNewMenuInput] = useState(false);
@@ -126,6 +285,10 @@ export default function BranchesManager({
       setPhone(branch.phone || '');
       setGoogleReviewUrl(branch.googleReviewUrl || '');
       setInstagramUrl(branch.instagramUrl || '');
+      setLocationUrl(branch.locationUrl || '');
+      setCoverVideoUrl(branch.coverVideoUrl || '');
+      setSlogan(branch.slogan || '');
+      setLogoUrl(branch.logoUrl || '');
       setIsActive(branch.isActive);
     } else {
       setEditingBranch(null);
@@ -136,6 +299,10 @@ export default function BranchesManager({
       setPhone('');
       setGoogleReviewUrl('');
       setInstagramUrl('');
+      setLocationUrl('');
+      setCoverVideoUrl('');
+      setSlogan('');
+      setLogoUrl('');
       setIsActive(true);
     }
     setShowNewMenuInput(false);
@@ -160,6 +327,10 @@ export default function BranchesManager({
       phone: phone.trim() || null,
       googleReviewUrl: googleReviewUrl.trim() || null,
       instagramUrl: instagramUrl.trim() || null,
+      locationUrl: locationUrl.trim() || null,
+      coverVideoUrl: coverVideoUrl.trim() || null,
+      slogan: slogan.trim() || null,
+      logoUrl: logoUrl.trim() || null,
       isActive,
     };
 
@@ -445,149 +616,192 @@ export default function BranchesManager({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5 text-xs">
               
-              {/* Name input */}
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-stone-700">Şube Adı <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={handleNameChange}
-                  placeholder="Örn: Özhamur FSM"
-                  className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none"
-                />
-              </div>
-
-              {/* Slug input */}
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-stone-700">QR Slug Adresi <span className="text-red-500">*</span></label>
-                <div className="flex items-center bg-stone-50 border border-stone-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl overflow-hidden pr-3">
-                  <span className="pl-3 text-stone-400 font-semibold select-none font-mono">/menu/</span>
+              {/* SECTION 1: GENEL BİLGİLER */}
+              <div className="flex flex-col gap-3">
+                <h4 className="font-extrabold text-[11px] uppercase tracking-wider text-stone-500 border-b border-stone-100 pb-1.5">Genel Bilgiler</h4>
+                
+                {/* Name input */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-stone-700">Şube Adı <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                    placeholder="ozhamur-fsm"
-                    className="flex-1 bg-transparent border-none outline-none py-2.5 font-mono font-semibold"
+                    value={name}
+                    onChange={handleNameChange}
+                    placeholder="Örn: Özhamur FSM"
+                    className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none text-black"
                   />
                 </div>
-                <span className="text-[10px] text-stone-400 font-semibold leading-relaxed">
-                  Bu şubenin QR kodunun yönleneceği özgün web adresi slugıdır (küçük harf, sayı ve tire).
-                </span>
-              </div>
 
-              {/* Menu selection & Create Menu Inline */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="font-bold text-stone-700">Bağlanacak Menü <span className="text-red-500">*</span></label>
-                  <button
-                    type="button"
-                    onClick={() => setShowNewMenuInput(!showNewMenuInput)}
-                    className="text-[10px] font-black text-indigo-600 hover:text-indigo-500 flex items-center gap-0.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Yeni Menü Oluştur
-                  </button>
-                </div>
-
-                {/* Inline New Menu Form */}
-                {showNewMenuInput && (
-                  <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl flex gap-2 items-center mb-2 animate-fade-in">
+                {/* Slug input */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-stone-700">QR Slug Adresi <span className="text-red-500">*</span></label>
+                  <div className="flex items-center bg-stone-50 border border-stone-200 focus-within:border-indigo-500 focus-within:bg-white rounded-xl overflow-hidden pr-3 text-black">
+                    <span className="pl-3 text-stone-400 font-semibold select-none font-mono">/menu/</span>
                     <input
                       type="text"
-                      value={newMenuName}
-                      onChange={(e) => setNewMenuName(e.target.value)}
-                      placeholder="Yeni Menü İsmi (Örn: Gece Menüsü)"
-                      className="flex-1 bg-white border border-stone-250 rounded-lg px-2.5 py-1.5 font-semibold outline-none"
+                      required
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                      placeholder="ozhamur-fsm"
+                      className="flex-1 bg-transparent border-none outline-none py-2.5 font-mono font-semibold"
                     />
+                  </div>
+                  <span className="text-[10px] text-stone-400 font-semibold leading-relaxed">
+                    Bu şubenin QR kodunun yönleneceği özgün web adresi slugıdır (küçük harf, sayı ve tire).
+                  </span>
+                </div>
+
+                {/* Menu selection */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="font-bold text-stone-700">Bağlanacak Menü <span className="text-red-500">*</span></label>
                     <button
                       type="button"
-                      onClick={handleCreateMenuInline}
-                      disabled={creatingMenu}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-black shrink-0 disabled:opacity-50"
+                      onClick={() => setShowNewMenuInput(!showNewMenuInput)}
+                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-500 flex items-center gap-0.5"
                     >
-                      {creatingMenu ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Kaydet'}
+                      <Plus className="w-3.5 h-3.5" />
+                      Yeni Menü Oluştur
                     </button>
                   </div>
-                )}
 
-                <select
-                  value={selectedMenuId}
-                  onChange={(e) => setSelectedMenuId(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none"
-                >
-                  {menus.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-[10px] text-stone-400 font-semibold leading-relaxed">
-                  Şubenizin göstereceği ortak menü şablonunu seçin. Ürün kopyalamaya gerek kalmadan bu menüyü paylaşırlar.
-                </span>
-              </div>
+                  {showNewMenuInput && (
+                    <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl flex gap-2 items-center mb-2 animate-fade-in text-black">
+                      <input
+                        type="text"
+                        value={newMenuName}
+                        onChange={(e) => setNewMenuName(e.target.value)}
+                        placeholder="Yeni Menü İsmi (Örn: Gece Menüsü)"
+                        className="flex-1 bg-white border border-stone-250 rounded-lg px-2.5 py-1.5 font-semibold outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateMenuInline}
+                        disabled={creatingMenu}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-black shrink-0 disabled:opacity-50"
+                      >
+                        {creatingMenu ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Kaydet'}
+                      </button>
+                    </div>
+                  )}
 
-              {/* Contact Information */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <select
+                    value={selectedMenuId}
+                    onChange={(e) => setSelectedMenuId(e.target.value)}
+                    className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none text-black"
+                  >
+                    {menus.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-stone-700">Şube Telefonu</label>
+                    <input
+                      type="text"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Örn: 0224 444 0 444"
+                      className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none text-black"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-auto py-3">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="w-4.5 h-4.5 text-indigo-600 bg-stone-50 border-stone-200 rounded focus:ring-indigo-500"
+                    />
+                    <label htmlFor="isActive" className="font-bold text-stone-700 select-none">
+                      Şube Aktif
+                    </label>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-bold text-stone-700">Şube Telefonu</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Örn: 0224 444 0 444"
-                    className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none"
+                  <label className="font-bold text-stone-700">Şube Açık Adresi</label>
+                  <textarea
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Örn: Fethiye Mah. FSM Bulvarı No: 120, Nilüfer/Bursa"
+                    rows={2}
+                    className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none resize-none text-black"
                   />
                 </div>
+              </div>
+
+              {/* SECTION 2: KARŞILAMA EKRANI BUTON BAĞLANTILARI */}
+              <div className="flex flex-col gap-3">
+                <h4 className="font-extrabold text-[11px] uppercase tracking-wider text-stone-500 border-b border-stone-100 pb-1.5">Karşılama Ekranı Buton Bağlantıları</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-stone-700">Instagram URL</label>
+                    <input
+                      type="url"
+                      value={instagramUrl}
+                      onChange={(e) => setInstagramUrl(e.target.value)}
+                      placeholder="https://instagram.com/sube"
+                      className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none text-black"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-stone-700">Google Haritalar (Konum) URL</label>
+                    <input
+                      type="url"
+                      value={locationUrl}
+                      onChange={(e) => setLocationUrl(e.target.value)}
+                      placeholder="https://maps.google.com/?q=..."
+                      className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none text-black"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-bold text-stone-700">Instagram Bağlantısı</label>
+                  <label className="font-bold text-stone-700">Google Yorumlar URL</label>
                   <input
                     type="url"
-                    value={instagramUrl}
-                    onChange={(e) => setInstagramUrl(e.target.value)}
-                    placeholder="https://instagram.com/sube"
-                    className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none"
+                    value={googleReviewUrl}
+                    onChange={(e) => setGoogleReviewUrl(e.target.value)}
+                    placeholder="https://g.page/r/sube-yorum-linki"
+                    className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none text-black"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-stone-700">Google Yorum Linki</label>
-                <input
-                  type="url"
-                  value={googleReviewUrl}
-                  onChange={(e) => setGoogleReviewUrl(e.target.value)}
-                  placeholder="https://g.page/r/sube-yorum-linki"
-                  className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none"
-                />
-              </div>
+              {/* SECTION 3: ŞUBEYE ÖZEL İÇERİKLER */}
+              <div className="flex flex-col gap-3">
+                <h4 className="font-extrabold text-[11px] uppercase tracking-wider text-stone-500 border-b border-stone-100 pb-1.5">Şubeye Özel İçerikler</h4>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-stone-700">Şube Açık Adresi</label>
-                <textarea
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Örn: Fethiye Mah. FSM Bulvarı No: 120, Nilüfer/Bursa"
-                  rows={2}
-                  className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none resize-none"
-                />
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-stone-700">Slogan</label>
+                  <input
+                    type="text"
+                    value={slogan}
+                    onChange={(e) => setSlogan(e.target.value)}
+                    placeholder="Örn: Lezzetin En Doğal Hali"
+                    className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2.5 font-semibold outline-none text-black"
+                  />
+                </div>
 
-              {/* Status input */}
-              <div className="flex items-center gap-2 mt-1 py-1">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4.5 h-4.5 text-indigo-600 bg-stone-50 border-stone-200 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="isActive" className="font-bold text-stone-700 select-none">
-                  Şube Aktif (Menü yayında ve taranabilir olacak)
-                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-stone-700">Şube Logosu <span className="font-normal text-stone-400">(isteğe bağlı)</span></label>
+                    {renderDropzone('logo', logoUrl, uploadingLogo, logoProgress, 'image/*', logoInputRef, 'Logo Seçin veya Sürükleyin')}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-stone-700">Şube Karşılama Videosu <span className="font-normal text-stone-400">(isteğe bağlı)</span></label>
+                    {renderDropzone('video', coverVideoUrl, uploadingVideo, videoProgress, 'video/*', videoInputRef, 'Arka Plan Videosu')}
+                  </div>
+                </div>
               </div>
 
               {/* Modal Actions */}
@@ -601,7 +815,7 @@ export default function BranchesManager({
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingLogo || uploadingVideo}
                   className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-lg transition-all active:scale-98 disabled:opacity-50"
                 >
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Şubeyi Kaydet'}

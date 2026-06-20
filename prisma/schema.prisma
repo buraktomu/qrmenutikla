@@ -86,6 +86,10 @@ model Branch {
   phone           String?
   googleReviewUrl String?
   instagramUrl    String?
+  locationUrl     String?
+  coverVideoUrl   String?
+  slogan          String?
+  logoUrl         String?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

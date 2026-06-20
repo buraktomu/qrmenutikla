@@ -146,12 +146,12 @@ export default async function PublicMenuPage(
     <QrMenu
       business={{
         name: branch ? branch.name : business.name,
-        description: business.description,
+        description: branch ? (branch.slogan || business.description) : business.description,
         whatsappNumber: business.whatsappNumber,
         showCalories: business.showCalories,
         allowOrders: effectiveAllowOrders,
-        logoUrl: business.logoUrl,
-        coverVideoUrl: business.coverVideoUrl,
+        logoUrl: branch ? (branch.logoUrl || business.logoUrl) : business.logoUrl,
+        coverVideoUrl: branch ? (branch.coverVideoUrl || business.coverVideoUrl) : business.coverVideoUrl,
         coverImageUrl: business.coverImageUrl,
         coverOpacity: business.coverOpacity,
         themeId: business.themeId,
@@ -159,7 +159,7 @@ export default async function PublicMenuPage(
         serviceType: business.serviceType,
         address: branch ? (branch.address || business.address) : business.address,
         instagramUrl: branch ? (branch.instagramUrl || business.instagramUrl) : business.instagramUrl,
-        locationUrl: business.locationUrl,
+        locationUrl: branch ? (branch.locationUrl || business.locationUrl) : business.locationUrl,
         reviewsUrl: branch ? (branch.googleReviewUrl || business.reviewsUrl) : business.reviewsUrl,
         slug: branch ? branch.slug : business.slug,
       }}
