@@ -39,6 +39,10 @@ const productSchema = z.object({
   protein: z.number().nullable().optional(),
   carbs: z.number().nullable().optional(),
   fat: z.number().nullable().optional(),
+  ingredients: z.string().optional().nullable(),
+  allergens: z.string().optional().nullable(),
+  extraInfo: z.string().optional().nullable(),
+  isCaloriesEstimated: z.boolean().default(false),
   isActive: z.boolean().default(true),
 });
 
@@ -221,6 +225,10 @@ export async function createProduct(businessId: string, categoryId: string, data
         protein: data.protein,
         carbs: data.carbs,
         fat: data.fat,
+        ingredients: data.ingredients || null,
+        allergens: data.allergens || null,
+        extraInfo: data.extraInfo || null,
+        isCaloriesEstimated: data.isCaloriesEstimated ?? false,
         isActive: data.isActive,
         sortOrder: count,
       },
@@ -263,6 +271,10 @@ export async function updateProduct(businessId: string, categoryId: string, prod
         protein: data.protein,
         carbs: data.carbs,
         fat: data.fat,
+        ingredients: data.ingredients || null,
+        allergens: data.allergens || null,
+        extraInfo: data.extraInfo || null,
+        isCaloriesEstimated: data.isCaloriesEstimated ?? false,
         isActive: data.isActive,
       },
     });

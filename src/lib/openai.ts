@@ -321,13 +321,49 @@ export async function predictCaloriesAndMacros(
   productName: string,
   description: string,
   businessId?: string
-): Promise<{ calories: number; protein: number; carbs: number; fat: number }> {
-  const defaultReturn = { calories: 250, protein: 8, carbs: 30, fat: 10 };
+): Promise<{ 
+  calories: number; 
+  protein: number; 
+  carbs: number; 
+  fat: number;
+  ingredients: string;
+  allergens: string;
+  extraInfo: string;
+  isCaloriesEstimated: boolean;
+}> {
+  const defaultReturn = { 
+    calories: 250, 
+    protein: 8, 
+    carbs: 30, 
+    fat: 10,
+    ingredients: '',
+    allergens: 'İşletmeden teyit edilmelidir',
+    extraInfo: '',
+    isCaloriesEstimated: true
+  };
 
   const config = await getAIConfig(businessId);
   if (config) {
     try {
-      const systemPrompt = 'Sen bir diyetisyen ve beslenme uzmanısın. Verilen yiyecek/içecek adına ve açıklamasına dayanarak tahmini kalori, protein (gram), karbonhidrat (gram) ve yağ (gram) miktarlarını hesapla. Çıktıyı kesinlikle şu JSON formatında ver: {"calories": sayı, "protein": sayı, "carbs": sayı, "fat": sayı}';
+      const systemPrompt = `Sen bir diyetisyen, beslenme uzmanı ve gıda güvenliği uzmanısın.
+Verilen yiyecek/içecek adına ve açıklamasına dayanarak tahmini kalori, protein (gram), karbonhidrat (gram), yağ (gram), içerik/bileşen bilgisi, alerjen bilgisi ve diğer bilgileri (örneğin glutensiz, vegan vb.) hesapla.
+
+Aşağıdaki kurallara SIKICA UY:
+1. Kalori tahmini ise isCaloriesEstimated alanını true yap.
+2. İçerik/bileşen bilgisi (ingredients) yalnızca ürün adından/açıklamasından kesin anlaşılıyorsa yazılsın. Emin değilsen boş bırak veya sadece kesin olan gıdaları yaz.
+3. Alerjenlerde (allergens) emin değilsen kesinlikle "İşletmeden teyit edilmelidir" notunu ekle.
+4. Domuz/alkol bilgisi asla tahminle yazılmasın. "Domuz içermez" veya "alkol içermez" gibi kesin ifadeleri eğer ürünün açıklamasında yazmıyorsa asla uydurarak yazma. Emin değilsen boş bırak veya "Bilgi girilmedi" yaz.
+5. Çıktıyı kesinlikle şu JSON formatında ver:
+{
+  "calories": sayı,
+  "protein": sayı,
+  "carbs": sayı,
+  "fat": sayı,
+  "ingredients": "içerik listesi veya boş string",
+  "allergens": "alerjen bilgisi veya boş string",
+  "extraInfo": "diğer bilgiler veya boş string",
+  "isCaloriesEstimated": true/false
+}`;
       const userPrompt = `Ürün Adı: ${productName}, Açıklama: ${description}`;
       const responseText = await callAI(systemPrompt, userPrompt, config, { jsonMode: true });
       
@@ -337,6 +373,10 @@ export async function predictCaloriesAndMacros(
         protein: Number(parsed.protein) || defaultReturn.protein,
         carbs: Number(parsed.carbs) || defaultReturn.carbs,
         fat: Number(parsed.fat) || defaultReturn.fat,
+        ingredients: parsed.ingredients || defaultReturn.ingredients,
+        allergens: parsed.allergens || defaultReturn.allergens,
+        extraInfo: parsed.extraInfo || defaultReturn.extraInfo,
+        isCaloriesEstimated: parsed.isCaloriesEstimated !== undefined ? Boolean(parsed.isCaloriesEstimated) : defaultReturn.isCaloriesEstimated,
       };
     } catch (error) {
       console.error('predictCaloriesAndMacros AI call error:', error);
@@ -347,19 +387,19 @@ export async function predictCaloriesAndMacros(
   const nameLower = productName.toLowerCase();
   
   if (nameLower.includes('latte') || nameLower.includes('kahve')) {
-    return { calories: 150, protein: 7, carbs: 12, fat: 5 };
+    return { ...defaultReturn, calories: 150, protein: 7, carbs: 12, fat: 5, ingredients: 'Espresso, Süt', allergens: 'Süt (Laktoz)' };
   }
   if (nameLower.includes('burger')) {
-    return { calories: 680, protein: 35, carbs: 55, fat: 28 };
+    return { ...defaultReturn, calories: 680, protein: 35, carbs: 55, fat: 28, ingredients: 'Dana köftesi, Burger ekmeği, Cheddar peyniri, Marul, Domates', allergens: 'Gluten, Süt (Laktoz)' };
   }
   if (nameLower.includes('sufle') || nameLower.includes('tatlı')) {
-    return { calories: 420, protein: 6, carbs: 50, fat: 18 };
+    return { ...defaultReturn, calories: 420, protein: 6, carbs: 50, fat: 18, ingredients: 'Çikolata, Un, Şeker, Yumurta, Tereyağı', allergens: 'Gluten, Yumurta, Süt (Laktoz)' };
   }
   if (nameLower.includes('salata')) {
-    return { calories: 280, protein: 12, carbs: 10, fat: 20 };
+    return { ...defaultReturn, calories: 280, protein: 12, carbs: 10, fat: 20, ingredients: 'Mevsim yeşillikleri, Zeytinyağı, Limon sosu', allergens: 'İşletmeden teyit edilmelidir' };
   }
   if (nameLower.includes('pizza')) {
-    return { calories: 850, protein: 30, carbs: 95, fat: 24 };
+    return { ...defaultReturn, calories: 850, protein: 30, carbs: 95, fat: 24, ingredients: 'Pizza hamuru, Mozzarella peyniri, Domates sosu', allergens: 'Gluten, Süt (Laktoz)' };
   }
 
   return defaultReturn;

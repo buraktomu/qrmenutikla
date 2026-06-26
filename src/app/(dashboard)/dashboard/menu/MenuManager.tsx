@@ -18,6 +18,7 @@ import {
 } from '@/app/actions/menu';
 import { 
   Plus, 
+  AlertTriangle,
   Edit, 
   Trash2, 
   ArrowUp, 
@@ -47,6 +48,10 @@ type ProductType = {
   protein: number | null;
   carbs: number | null;
   fat: number | null;
+  ingredients: string | null;
+  allergens: string | null;
+  extraInfo: string | null;
+  isCaloriesEstimated: boolean;
   isActive: boolean;
 };
 
@@ -224,6 +229,10 @@ export default function MenuManager({
   const [pProtein, setPProtein] = useState('');
   const [pCarbs, setPCarbs] = useState('');
   const [pFat, setPFat] = useState('');
+  const [pIngredients, setPIngredients] = useState('');
+  const [pAllergens, setPAllergens] = useState('');
+  const [pExtraInfo, setPExtraInfo] = useState('');
+  const [pIsCaloriesEstimated, setPIsCaloriesEstimated] = useState(false);
 
   // AI Campaign Copywriting State
   const [campaignModalOpen, setCampaignModalOpen] = useState(false);
@@ -408,6 +417,10 @@ export default function MenuManager({
       setPProtein(prod.protein?.toString() || '');
       setPCarbs(prod.carbs?.toString() || '');
       setPFat(prod.fat?.toString() || '');
+      setPIngredients(prod.ingredients || '');
+      setPAllergens(prod.allergens || '');
+      setPExtraInfo(prod.extraInfo || '');
+      setPIsCaloriesEstimated(prod.isCaloriesEstimated || false);
     } else {
       setPName('');
       setPPrice('0');
@@ -420,6 +433,10 @@ export default function MenuManager({
       setPProtein('');
       setPCarbs('');
       setPFat('');
+      setPIngredients('');
+      setPAllergens('');
+      setPExtraInfo('');
+      setPIsCaloriesEstimated(false);
     }
     setProdModalOpen(true);
   };
@@ -454,6 +471,10 @@ export default function MenuManager({
       protein: pProtein ? parseFloat(pProtein) : null,
       carbs: pCarbs ? parseFloat(pCarbs) : null,
       fat: pFat ? parseFloat(pFat) : null,
+      ingredients: pIngredients || null,
+      allergens: pAllergens || null,
+      extraInfo: pExtraInfo || null,
+      isCaloriesEstimated: pIsCaloriesEstimated,
       isActive: pActive,
     };
 
@@ -526,9 +547,13 @@ export default function MenuManager({
         setPProtein(res.result.protein.toString());
         setPCarbs(res.result.carbs.toString());
         setPFat(res.result.fat.toString());
-        showToast('AI kalori ve makro değerleri hesaplandı!', 'success');
+        setPIngredients(res.result.ingredients || '');
+        setPAllergens(res.result.allergens || '');
+        setPExtraInfo(res.result.extraInfo || '');
+        setPIsCaloriesEstimated(res.result.isCaloriesEstimated ?? true);
+        showToast('AI kalori, makro ve içerik değerleri hesaplandı!', 'success');
       } else {
-        showToast('Makro değerleri hesaplanamadı.', 'error');
+        showToast('Değerler hesaplanamadı.', 'error');
       }
     } catch {
       showToast('AI bağlantısında sorun oluştu.', 'error');
@@ -904,6 +929,17 @@ export default function MenuManager({
             </div>
 
             <form onSubmit={handleSaveProduct} className="flex flex-col gap-5 text-black">
+              {pIsCaloriesEstimated && (
+                <div className="p-3 bg-amber-50 border border-amber-250 text-amber-900 rounded-xl flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5 font-extrabold text-xs">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    Yapay Zeka Tahmin Onayı
+                  </div>
+                  <p className="text-[10px] font-semibold leading-relaxed">
+                    Bu üründeki besin, alerjen ve içerik değerleri Yapay Zeka tarafından tahmin edilmiştir. Lütfen bilgilerin doğruluğunu teyit edin. Yayına almak için modal altındaki <strong>"Ürünü Kaydet"</strong> butonuna basarak onaylamalısınız.
+                  </p>
+                </div>
+              )}
               {/* Product Basic Fields Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
@@ -1130,6 +1166,54 @@ export default function MenuManager({
                         value={pFat}
                         onChange={(e) => setPFat(e.target.value)}
                         className="w-full px-2.5 py-1.5 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-center outline-none text-black font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="checkbox"
+                      id="pIsCaloriesEstimated"
+                      checked={pIsCaloriesEstimated}
+                      onChange={(e) => setPIsCaloriesEstimated(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 border-stone-200 rounded focus:ring-indigo-500"
+                    />
+                    <label htmlFor="pIsCaloriesEstimated" className="text-[10px] text-stone-700 font-bold select-none">
+                      Kalori Değeri Tahminidir (Menüde tahmini olarak işaretlenecektir)
+                    </label>
+                  </div>
+
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] text-black font-bold">İçerik / Bileşen Bilgisi</label>
+                      <textarea
+                        placeholder="Örn: Espresso, süt köpüğü..."
+                        value={pIngredients}
+                        onChange={(e) => setPIngredients(e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-xs outline-none text-black font-semibold resize-none"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] text-black font-bold">Alerjen Bilgileri</label>
+                      <input
+                        type="text"
+                        placeholder="Örn: Süt (Laktoz), Gluten veya 'İşletmeden teyit edilmelidir'"
+                        value={pAllergens}
+                        onChange={(e) => setPAllergens(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-xs outline-none text-black font-semibold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] text-black font-bold">Diğer Bilgiler</label>
+                      <input
+                        type="text"
+                        placeholder="Örn: Vegan, Glutensiz"
+                        value={pExtraInfo}
+                        onChange={(e) => setPExtraInfo(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-xs outline-none text-black font-semibold"
                       />
                     </div>
                   </div>

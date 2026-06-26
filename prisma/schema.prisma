@@ -126,14 +126,18 @@ model Product {
   imageUrl       String?
   isCommonImage  Boolean  @default(false)
   commonImageKey String?
-  calories       Int?
-  protein        Float?
-  carbs          Float?
-  fat            Float?
-  sortOrder      Int      @default(0)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  calories             Int?
+  protein              Float?
+  carbs                Float?
+  fat                  Float?
+  ingredients          String?
+  allergens            String?
+  extraInfo            String?
+  isCaloriesEstimated  Boolean  @default(false)
+  sortOrder            Int      @default(0)
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([categoryId])
 }

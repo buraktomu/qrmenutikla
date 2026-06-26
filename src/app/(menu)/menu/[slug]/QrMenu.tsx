@@ -21,6 +21,7 @@ import {
   Receipt,
   ShieldCheck,
   BookOpen,
+  AlertTriangle,
 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
@@ -38,6 +39,10 @@ type ProductType = {
   protein: number | null;
   carbs: number | null;
   fat: number | null;
+  ingredients: string | null;
+  allergens: string | null;
+  extraInfo: string | null;
+  isCaloriesEstimated: boolean;
   isActive: boolean;
 };
 
@@ -1205,7 +1210,7 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
                 </h5>
                 <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono">
                   {[
-                    { val: selectedProduct.calories, label: 'Kcal' },
+                    { val: selectedProduct.calories, label: selectedProduct.isCaloriesEstimated ? 'Kcal (Tahmini)' : 'Kcal' },
                     { val: `${selectedProduct.protein || 0}g`, label: 'Protein' },
                     { val: `${selectedProduct.carbs || 0}g`, label: 'Karb' },
                     { val: `${selectedProduct.fat || 0}g`, label: 'Yağ' },
@@ -1216,8 +1221,46 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
                     </div>
                   ))}
                 </div>
-                <p className="flex items-center gap-1 text-[8px] opacity-40 justify-center">
-                  <Info className="w-3 h-3" /> Tahmini hesaplanmıştır.
+                {selectedProduct.isCaloriesEstimated && (
+                  <p className="flex items-center gap-1 text-[8px] opacity-40 justify-center">
+                    <Info className="w-3 h-3" /> Tahmini hesaplanmıştır.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {selectedProduct.ingredients && selectedProduct.ingredients.trim().length > 0 && (
+              <div className="mt-4 p-4 rounded-2xl bg-current/5 border border-current/10 flex flex-col gap-2">
+                <h5 className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 opacity-80 text-emerald-500">
+                  <BookOpen className="w-4 h-4" />
+                  İçerik / Bileşen Bilgisi
+                </h5>
+                <p className={`text-xs leading-relaxed font-semibold opacity-90 ${theme.textDesc}`}>
+                  {selectedProduct.ingredients}
+                </p>
+              </div>
+            )}
+
+            {selectedProduct.allergens && selectedProduct.allergens.trim().length > 0 && (
+              <div className="mt-4 p-4 rounded-2xl bg-current/5 border border-current/10 flex flex-col gap-2">
+                <h5 className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 opacity-80 text-amber-500">
+                  <AlertTriangle className="w-4 h-4" />
+                  Alerjen Bilgileri
+                </h5>
+                <p className={`text-xs leading-relaxed font-semibold opacity-90 ${theme.textDesc}`}>
+                  {selectedProduct.allergens}
+                </p>
+              </div>
+            )}
+
+            {selectedProduct.extraInfo && selectedProduct.extraInfo.trim().length > 0 && (
+              <div className="mt-4 p-4 rounded-2xl bg-current/5 border border-current/10 flex flex-col gap-2">
+                <h5 className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 opacity-80 text-blue-500">
+                  <Info className="w-4 h-4" />
+                  Diğer Bilgiler
+                </h5>
+                <p className={`text-xs leading-relaxed font-semibold opacity-90 ${theme.textDesc}`}>
+                  {selectedProduct.extraInfo}
                 </p>
               </div>
             )}
