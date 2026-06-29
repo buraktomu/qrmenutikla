@@ -133,6 +133,9 @@ model Product {
   ingredients          String?
   allergens            String?
   extraInfo            String?
+  nutritionInfo        String?
+  nutritionDescription String?
+  nutrition            String?
   isCaloriesEstimated  Boolean  @default(false)
   sortOrder            Int      @default(0)
   isActive             Boolean  @default(true)

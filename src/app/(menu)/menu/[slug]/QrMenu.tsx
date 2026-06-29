@@ -43,6 +43,9 @@ type ProductType = {
   allergens: string | null;
   extraInfo: string | null;
   isCaloriesEstimated: boolean;
+  nutritionInfo: string | null;
+  nutritionDescription: string | null;
+  nutrition: string | null;
   isActive: boolean;
 };
 
@@ -1070,10 +1073,12 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
                               </p>
                             )}
                             <div className="flex items-center justify-between mt-2.5">
-                              <span className={`font-black text-xs`}>{prod.price} TL</span>
-                              {showCaloriesGlobally && prod.calories && (
-                                <span className="text-[7px] bg-amber-500/10 text-amber-500 px-1 rounded flex items-center gap-0.5 font-mono font-bold">
-                                  <Flame className="w-2.5 h-2.5" /> {prod.calories} kcal
+                              <span className={`font-black text-xs`}>
+                                {prod.price <= 0 ? 'Fiyat bilgisi yok' : `${prod.price} TL`}
+                              </span>
+                              {prod.calories !== null && prod.calories !== undefined && (
+                                <span className="text-[9px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded-full flex items-center gap-1 font-mono font-bold">
+                                  🔥 {prod.calories} kcal
                                 </span>
                               )}
                             </div>
@@ -1196,37 +1201,12 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
             )}
 
             <h3 className={`text-lg font-extrabold ${theme.textTitle}`}>{selectedProduct.name}</h3>
-            <span className={`text-base font-black block mt-1.5 ${theme.textPrice}`}>{selectedProduct.price.toFixed(2)} TL</span>
+            <span className={`text-base font-black block mt-1.5 ${theme.textPrice}`}>
+              {selectedProduct.price <= 0 ? 'Fiyat bilgisi yok' : `${selectedProduct.price.toFixed(2)} TL`}
+            </span>
 
             {selectedProduct.description && (
               <p className={`text-xs mt-4 leading-relaxed font-medium opacity-75 ${theme.textDesc}`}>{selectedProduct.description}</p>
-            )}
-
-            {showCaloriesGlobally && selectedProduct.calories && (
-              <div className="mt-5 p-4 rounded-2xl bg-current/5 border border-current/10 flex flex-col gap-3">
-                <h5 className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 opacity-80">
-                  <Flame className="w-4 h-4 text-amber-500" />
-                  Besin Değerleri
-                </h5>
-                <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-mono">
-                  {[
-                    { val: selectedProduct.calories, label: selectedProduct.isCaloriesEstimated ? 'Kcal (Tahmini)' : 'Kcal' },
-                    { val: `${selectedProduct.protein || 0}g`, label: 'Protein' },
-                    { val: `${selectedProduct.carbs || 0}g`, label: 'Karb' },
-                    { val: `${selectedProduct.fat || 0}g`, label: 'Yağ' },
-                  ].map(({ val, label }) => (
-                    <div key={label} className="flex flex-col p-2 bg-current/5 rounded-xl border border-current/5">
-                      <span className="font-extrabold text-xs">{val}</span>
-                      <span className="text-[8px] opacity-55 mt-0.5 uppercase">{label}</span>
-                    </div>
-                  ))}
-                </div>
-                {selectedProduct.isCaloriesEstimated && (
-                  <p className="flex items-center gap-1 text-[8px] opacity-40 justify-center">
-                    <Info className="w-3 h-3" /> Tahmini hesaplanmıştır.
-                  </p>
-                )}
-              </div>
             )}
 
             {selectedProduct.ingredients && selectedProduct.ingredients.trim().length > 0 && (
@@ -1250,6 +1230,34 @@ export default function QrMenu({ business, categories, hasWhatsAppOrder, hasNutr
                 <p className={`text-xs leading-relaxed font-semibold opacity-90 ${theme.textDesc}`}>
                   {selectedProduct.allergens}
                 </p>
+              </div>
+            )}
+
+            {((selectedProduct.calories !== null && selectedProduct.calories !== undefined) ||
+              (selectedProduct.nutritionInfo && selectedProduct.nutritionInfo.trim().length > 0) ||
+              (selectedProduct.nutritionDescription && selectedProduct.nutritionDescription.trim().length > 0) ||
+              (selectedProduct.nutrition && selectedProduct.nutrition.trim().length > 0)) && (
+              <div className="mt-4 p-4 rounded-2xl bg-current/5 border border-current/10 flex flex-col gap-2">
+                <h5 className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 opacity-80 text-orange-500">
+                  <Flame className="w-4 h-4" />
+                  Kalori / Besin Bilgisi
+                </h5>
+                <div className={`text-xs leading-relaxed font-semibold opacity-90 flex flex-col gap-1.5 ${theme.textDesc}`}>
+                  {selectedProduct.calories !== null && selectedProduct.calories !== undefined && (
+                    <div className="font-bold">
+                      🔥 {selectedProduct.calories} kcal {selectedProduct.isCaloriesEstimated ? '(tahmini)' : ''}
+                    </div>
+                  )}
+                  {selectedProduct.nutritionInfo && selectedProduct.nutritionInfo.trim().length > 0 && (
+                    <div>{selectedProduct.nutritionInfo}</div>
+                  )}
+                  {selectedProduct.nutritionDescription && selectedProduct.nutritionDescription.trim().length > 0 && (
+                    <div className="opacity-75 text-[11px] leading-normal">{selectedProduct.nutritionDescription}</div>
+                  )}
+                  {selectedProduct.nutrition && selectedProduct.nutrition.trim().length > 0 && (
+                    <div className="opacity-75 text-[11px] leading-normal">{selectedProduct.nutrition}</div>
+                  )}
+                </div>
               </div>
             )}
 

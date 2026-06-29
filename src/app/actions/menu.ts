@@ -43,6 +43,9 @@ const productSchema = z.object({
   allergens: z.string().optional().nullable(),
   extraInfo: z.string().optional().nullable(),
   isCaloriesEstimated: z.boolean().default(false),
+  nutritionInfo: z.string().optional().nullable(),
+  nutritionDescription: z.string().optional().nullable(),
+  nutrition: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
 });
 
@@ -229,6 +232,9 @@ export async function createProduct(businessId: string, categoryId: string, data
         allergens: data.allergens || null,
         extraInfo: data.extraInfo || null,
         isCaloriesEstimated: data.isCaloriesEstimated ?? false,
+        nutritionInfo: data.nutritionInfo || null,
+        nutritionDescription: data.nutritionDescription || null,
+        nutrition: data.nutrition || null,
         isActive: data.isActive,
         sortOrder: count,
       },
@@ -275,6 +281,9 @@ export async function updateProduct(businessId: string, categoryId: string, prod
         allergens: data.allergens || null,
         extraInfo: data.extraInfo || null,
         isCaloriesEstimated: data.isCaloriesEstimated ?? false,
+        nutritionInfo: data.nutritionInfo || null,
+        nutritionDescription: data.nutritionDescription || null,
+        nutrition: data.nutrition || null,
         isActive: data.isActive,
       },
     });

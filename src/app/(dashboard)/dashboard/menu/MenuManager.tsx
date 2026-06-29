@@ -52,6 +52,9 @@ type ProductType = {
   allergens: string | null;
   extraInfo: string | null;
   isCaloriesEstimated: boolean;
+  nutritionInfo: string | null;
+  nutritionDescription: string | null;
+  nutrition: string | null;
   isActive: boolean;
 };
 
@@ -233,6 +236,9 @@ export default function MenuManager({
   const [pAllergens, setPAllergens] = useState('');
   const [pExtraInfo, setPExtraInfo] = useState('');
   const [pIsCaloriesEstimated, setPIsCaloriesEstimated] = useState(false);
+  const [pNutritionInfo, setPNutritionInfo] = useState('');
+  const [pNutritionDescription, setPNutritionDescription] = useState('');
+  const [pNutrition, setPNutrition] = useState('');
 
   // AI Campaign Copywriting State
   const [campaignModalOpen, setCampaignModalOpen] = useState(false);
@@ -421,6 +427,9 @@ export default function MenuManager({
       setPAllergens(prod.allergens || '');
       setPExtraInfo(prod.extraInfo || '');
       setPIsCaloriesEstimated(prod.isCaloriesEstimated || false);
+      setPNutritionInfo(prod.nutritionInfo || '');
+      setPNutritionDescription(prod.nutritionDescription || '');
+      setPNutrition(prod.nutrition || '');
     } else {
       setPName('');
       setPPrice('0');
@@ -437,6 +446,9 @@ export default function MenuManager({
       setPAllergens('');
       setPExtraInfo('');
       setPIsCaloriesEstimated(false);
+      setPNutritionInfo('');
+      setPNutritionDescription('');
+      setPNutrition('');
     }
     setProdModalOpen(true);
   };
@@ -475,6 +487,9 @@ export default function MenuManager({
       allergens: pAllergens || null,
       extraInfo: pExtraInfo || null,
       isCaloriesEstimated: pIsCaloriesEstimated,
+      nutritionInfo: pNutritionInfo || null,
+      nutritionDescription: pNutritionDescription || null,
+      nutrition: pNutrition || null,
       isActive: pActive,
     };
 
@@ -1213,6 +1228,39 @@ export default function MenuManager({
                         placeholder="Örn: Vegan, Glutensiz"
                         value={pExtraInfo}
                         onChange={(e) => setPExtraInfo(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-xs outline-none text-black font-semibold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] text-black font-bold">Besin Bilgisi (nutritionInfo)</label>
+                      <input
+                        type="text"
+                        placeholder="Örn: 15g Protein, 40g Karbonhidrat"
+                        value={pNutritionInfo}
+                        onChange={(e) => setPNutritionInfo(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-xs outline-none text-black font-semibold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] text-black font-bold">Besin Detay Açıklaması (nutritionDescription)</label>
+                      <input
+                        type="text"
+                        placeholder="Örn: Günlük enerji ihtiyacının %10'unu karşılar"
+                        value={pNutritionDescription}
+                        onChange={(e) => setPNutritionDescription(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-xs outline-none text-black font-semibold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] text-black font-bold">Besin Değeri Ekstra (nutrition)</label>
+                      <input
+                        type="text"
+                        placeholder="Örn: Glutensiz, %100 Organik"
+                        value={pNutrition}
+                        onChange={(e) => setPNutrition(e.target.value)}
                         className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200 focus:border-indigo-500 text-xs outline-none text-black font-semibold"
                       />
                     </div>
